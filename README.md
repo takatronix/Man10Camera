@@ -1,1 +1,2 @@
-# Man10Camera
+# Minecraft Camera System Plugin
+マインクラフトでカメラを実装
