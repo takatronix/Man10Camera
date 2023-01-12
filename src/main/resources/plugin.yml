@@ -1,0 +1,11 @@
+name: Man10Camera
+version: '1.0'
+main: red.man10.camera.Main
+api-version: 1.17
+prefix: MCS
+authors: [takatronix]
+description: Minecraft Camera System
+website: https://man10.red
+commands:
+  mcs:
+    default: op
