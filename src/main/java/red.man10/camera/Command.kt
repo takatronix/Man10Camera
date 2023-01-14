@@ -57,6 +57,7 @@ object Command : CommandExecutor, TabCompleter {
             "camera1" -> Main.cameraThread1.setCamera(sender,name)
             "position" -> setPosition(sender,name)
             "radius" -> setRadius(sender,name)
+            "height" -> setHeight(sender,name)
 
         }
     }
