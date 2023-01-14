@@ -30,6 +30,7 @@ class Main : JavaPlugin() ,Listener {
 
         plugin.server.pluginManager.registerEvents(this, plugin)
 
+        // カメラスレッド1の起動
         cameraThread1 = CameraThread()
         cameraThread1.cameraName = "camera1"
         cameraThread1.load()
@@ -47,7 +48,7 @@ class Main : JavaPlugin() ,Listener {
         val entity=e.entity
         if(entity !is Player)
             return
-        //  カメラをアイテムを拾わない
+        //  カメラはアイテムを拾わない
         if(entity.uniqueId == cameraThread1.uniqueId)
             e.isCancelled = true
     }

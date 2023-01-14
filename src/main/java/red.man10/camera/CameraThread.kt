@@ -266,7 +266,7 @@ class CameraThread : Thread() {
     fun toAngle(radian: Double): Double {
         return radian * 180 / Math.PI
     }
-    private fun getRotation(player: Player): Double {
+    private fun getAngle(player: Player): Double {
         var rotation = ((player.location.yaw - 90) % 360).toDouble()
         if (rotation < 0) {
             rotation += 360.0
