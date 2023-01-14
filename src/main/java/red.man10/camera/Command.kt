@@ -58,6 +58,7 @@ object Command : CommandExecutor, TabCompleter {
             "position" -> setPosition(sender,name)
             "radius" -> setRadius(sender,name)
             "height" -> setHeight(sender,name)
+            "nightvision" -> setNightVision(sender,name)
 
         }
     }
@@ -104,6 +105,21 @@ object Command : CommandExecutor, TabCompleter {
         }
         error("パラメータは、ひとつだけで",sender)
     }
+    private fun setNightVision(sender: CommandSender,value:String){
+        val text= value.split(",")
+        if(text.size == 1){
+            try{
+                if(text[0] == "on")
+                    Main.cameraThread1.setNightVision(sender,true)
+                else
+                    Main.cameraThread1.setNightVision(sender,false)
+                return
+            }catch (ex:Exception){
+                error(ex.localizedMessage)
+            }
+        }
+        error("/mcs set nightvision on/off",sender)
+    }
 
 
 
@@ -118,6 +134,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/mcs set position [x,y,z] 監視対象に対する相対位置を指定")
         sender.sendMessage("§a/mcs set radius [r]  プレイヤーの周りを回る半径を指定")
         sender.sendMessage("§a/mcs set height [h]  カメラの高さを指定")
+        sender.sendMessage("§a/mcs set nightvision [on/off]  ナイトビジョン")
 
 
 
@@ -148,7 +165,7 @@ object Command : CommandExecutor, TabCompleter {
 
     private fun onTabSet(args: Array<out String>?) : List<String>?{
         if(args?.size == 2)
-            return listOf("target","camera","position","radius","height")
+            return listOf("target","camera","position","radius","height","nightvision")
         return null
     }
 

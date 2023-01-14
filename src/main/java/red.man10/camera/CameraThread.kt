@@ -30,6 +30,7 @@ class CameraThread : Thread() {
 
     var angleStep = 0.08
     var angle = 0.0
+    var nightVision = false
     // カメラの相対位置
     var relativePos:Vector= Vector(2.0,2.0,0.0)
 
@@ -140,6 +141,7 @@ class CameraThread : Thread() {
         radius = r
         if(radius < 2.0)
             radius = 2.0
+        relativePos.x = radius
         save(sender)
     }
 
@@ -219,18 +221,22 @@ class CameraThread : Thread() {
         camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
         camera?.gameMode = GameMode.CREATIVE
     }
+    fun setNightVision(sender:CommandSender,flag:Boolean){
+        if(flag)
+            camera?.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,1,true))
+        else
+            camera?.removePotionEffect(PotionEffectType.NIGHT_VISION)
+        nightVision = flag
+        save(sender)
+    }
 
     fun onGoAroundMode(){
 
         // ターゲットの相対位置のカメラ位置
-        var loc = target?.location?.add(relativePos)
-        var pos = loc?.toVector()
-
+        val loc = target?.location?.add(relativePos)
         angle += angleStep
         if(angle > 360)
             angle = 0.0
-
-
         val x = targetPos?.x?.plus(radius * cos(toRadian(angle)))!!
         val z = targetPos?.z?.plus(radius * sin(toRadian(angle)))!!
         val y = targetPos?.y?.plus(relativePos.y)!!
@@ -297,6 +303,7 @@ class CameraThread : Thread() {
             config["cameraMode"] = cameraMode.toString()
             config["gameMode"] = camera?.gameMode.toString()
             config["radius"] = radius
+            config["nightVision"] = nightVision
             config.save(file)
         }
         catch (e:Exception){
@@ -315,6 +322,7 @@ class CameraThread : Thread() {
             target = Bukkit.getPlayer(UUID.fromString(config["target"].toString()))
             camera = Bukkit.getPlayer(UUID.fromString(config["camera"].toString()))
             cameraMode = enumValueOf(config["cameraMode"].toString())
+            nightVision = config.getBoolean("nightVision")
             radius = config.getDouble("radius")
             if(radius < 2)
                 radius = 10.0
