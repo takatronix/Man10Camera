@@ -1,0 +1,12 @@
+mc1:
+  camera: camera1
+  location: location1
+mc2:
+  camera: camera2
+  location: location2
+mc3:
+  camera: camera3
+  location: location3
+mc4:
+  camera: camera4
+  location: location4

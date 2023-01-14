@@ -7,5 +7,11 @@ authors: [takatronix]
 description: Minecraft Camera System
 website: https://man10.red
 commands:
-  mcs:
+  mc1:
+    default: op
+  mc2:
+    default: op
+  mc3:
+    default: op
+  mc4:
     default: op

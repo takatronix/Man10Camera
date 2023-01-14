@@ -14,6 +14,7 @@ import kotlin.math.sin
 
 
 enum class CameraMode{
+    STOP,                       // 自動
     AUTO,                       // 自動
     SPECTATOR,                  // スペクテーター
     LOOK,                       // 停止して対象を見る
@@ -91,6 +92,7 @@ class CameraThread : Thread() {
                 CameraMode.FOLLOW -> onFollowMode()
                 CameraMode.GOAROUND -> onGoAroundMode()
                 CameraMode.LOOK -> onSpectatorMode()
+                else-> onStopMode()
             }
            // info("$cameraName is active")
         }
@@ -128,6 +130,9 @@ class CameraThread : Thread() {
             }
             CameraMode.AUTO -> {
                 onAutoMode()
+            }
+            else ->{
+                onStopMode()
             }
         }
         save(sender)
@@ -191,6 +196,8 @@ class CameraThread : Thread() {
 
     fun onAutoMode(){
     }
+    fun onStopMode(){
+    }
     fun onSpectatorMode(){
     }
     fun onLookMode(){
@@ -215,9 +222,13 @@ class CameraThread : Thread() {
 
     fun hide(sender:CommandSender){
         camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
-        camera?.gameMode = GameMode.CREATIVE
+        camera?.gameMode = GameMode.SPECTATOR
     }
     fun show(sender:CommandSender){
+        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
+        camera?.gameMode = GameMode.CREATIVE
+    }
+    fun showBody(sender:CommandSender){
         camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
         camera?.gameMode = GameMode.CREATIVE
     }

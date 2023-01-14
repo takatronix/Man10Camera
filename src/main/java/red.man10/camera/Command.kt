@@ -13,65 +13,74 @@ object Command : CommandExecutor, TabCompleter {
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
       //  info(args[0],sender)
+        if(args.isEmpty()){
+            showHelp(label,sender)
+            return true
+        }
+
 
         when(args[0]){
-            "help" -> showHelp(sender)
-            "set" -> set(sender,args)
-            "follow" -> follow(sender,args)
-            "rotate" -> rotate(sender,args)
-            "spectator" -> spectator(sender,args)
+            "help" -> showHelp(label,sender)
+            "set" -> set(label,sender,args)
+            "follow" -> follow(label,sender,args)
+            "rotate" -> rotate(label,sender,args)
+            "stop" -> stop(label,sender,args)
+            "spectator" -> spectator(label,sender,args)
          //   "look" -> look(sender,args)
          //   "teleport" -> teleport(sender,args)
-            "show" -> Main.cameraThread1.show(sender)
-            "hide" -> Main.cameraThread1.hide(sender)
+            "show" -> getCamera(label).show(sender)
+            "showbody" -> getCamera(label).showBody(sender)
+            "hide" -> getCamera(label).hide(sender)
         }
 
 
         return false
     }
 
-    private fun follow(sender: CommandSender,args: Array<out String>){
-        Main.cameraThread1.setMode(sender,CameraMode.FOLLOW)
+
+    private fun follow(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).setMode(sender,CameraMode.FOLLOW)
 
     }
-    private fun rotate(sender: CommandSender,args: Array<out String>){
-        Main.cameraThread1.setMode(sender,CameraMode.GOAROUND)
+    private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).setMode(sender,CameraMode.GOAROUND)
     }
-
-    private fun spectator(sender: CommandSender,args: Array<out String>){
-        Main.cameraThread1.setMode(sender,CameraMode.SPECTATOR)
-
+    private fun stop(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).setMode(sender,CameraMode.STOP)
+    }
+    private fun spectator(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).setMode(sender,CameraMode.SPECTATOR)
     }
 
 
     // set [key] [value]
-    private fun set(sender: CommandSender,args: Array<out String>){
+    private fun set(label:String,sender: CommandSender,args: Array<out String>){
         info("args.size = ${args.size}")
         if(args.size != 3){
-            showHelp(sender)
+            showHelp(label,sender)
             return
         }
         val key = args[1]
         val name = args[2]
         when(key){
-            "target" -> Main.cameraThread1.setTarget(sender,name)
-            "camera" -> Main.cameraThread1.setCamera(sender,name)
-            "camera1" -> Main.cameraThread1.setCamera(sender,name)
-            "position" -> setPosition(sender,name)
-            "radius" -> setRadius(sender,name)
-            "height" -> setHeight(sender,name)
-            "nightvision" -> setNightVision(sender,name)
+            "target" -> getCamera(label).setTarget(sender,name)
+            "camera" -> getCamera(label).setCamera(sender,name)
+            "camera1" -> getCamera(label).setCamera(sender,name)
+            "position" -> setPosition(label,sender,name)
+            "radius" -> setRadius(label,sender,name)
+            "height" -> setHeight(label,sender,name)
+            "nightvision" -> setNightVision(label,sender,name)
 
         }
     }
-    private fun setPosition(sender: CommandSender,value:String){
+    private fun setPosition(label:String,sender: CommandSender,value:String){
         val xyz= value.split(",")
         if(xyz.size == 3){
             try{
                 val x = xyz[0].toDouble()
                 val y = xyz[1].toDouble()
                 val z = xyz[2].toDouble()
-                Main.cameraThread1.setRelativePosition(sender,x,y,z)
+                getCamera(label).setRelativePosition(sender,x,y,z)
                 return
             }catch (ex:Exception){
                 error(ex.localizedMessage)
@@ -109,12 +118,12 @@ object Command : CommandExecutor, TabCompleter {
         error("パラメータは、x,y,zの相対座標で指定してください。",sender)
     }
 
-    private fun setRadius(sender: CommandSender,value:String){
+    private fun setRadius(label:String,sender: CommandSender,value:String){
         val text= value.split(",")
         if(text.size == 1){
             try{
                 val r = text[0].toDouble()
-                Main.cameraThread1.setRadius(sender,r)
+                getCamera(label).setRadius(sender,r)
                 return
             }catch (ex:Exception){
                 error(ex.localizedMessage)
@@ -123,12 +132,12 @@ object Command : CommandExecutor, TabCompleter {
         error("パラメータは2以上にしてください",sender)
     }
 
-    private fun setHeight(sender: CommandSender,value:String){
+    private fun setHeight(label:String,sender: CommandSender,value:String){
         val text= value.split(",")
         if(text.size == 1){
             try{
                 val h = text[0].toDouble()
-                Main.cameraThread1.setHeight(sender,h)
+                getCamera(label).setHeight(sender,h)
                 return
             }catch (ex:Exception){
                 error(ex.localizedMessage)
@@ -136,56 +145,63 @@ object Command : CommandExecutor, TabCompleter {
         }
         error("パラメータは、ひとつだけで",sender)
     }
-    private fun setNightVision(sender: CommandSender,value:String){
+    private fun setNightVision(label:String,sender: CommandSender,value:String){
         val text= value.split(",")
         if(text.size == 1){
             try{
                 if(text[0] == "on")
-                    Main.cameraThread1.setNightVision(sender,true)
+                    getCamera(label).setNightVision(sender,true)
                 else
-                    Main.cameraThread1.setNightVision(sender,false)
+                    getCamera(label).setNightVision(sender,false)
                 return
             }catch (ex:Exception){
                 error(ex.localizedMessage)
             }
         }
-        error("/mcs set nightvision on/off",sender)
+        error("/mc1 set nightvision on/off",sender)
     }
 
 
 
-    private fun showHelp(sender: CommandSender){
+    private fun showHelp(label:String,sender: CommandSender){
         sender.sendMessage("§b====================[Man10 Camera System]====================")
-        sender.sendMessage("[§kカメラモード制御]")
-        sender.sendMessage("§a/mcs follow     プレイヤーを追跡する")
-        sender.sendMessage("§a/mcs rotate     プレイヤーの周りをまわる")
-        sender.sendMessage("§a/mcs spectator  対象の視点を見る(サバイバル)")
-        sender.sendMessage("§a/mcs show       カメラの状態のボディをみせる(クリエイティブ)")
-        sender.sendMessage("§a/mcs hide       カメラのボディを見せない(クリエイティブ)")
+        sender.sendMessage("§amc1/mc2/mc3/mc4 カメラ1/カメラ2/カメラ3/カメラ4を制御")
+        sender.sendMessage("§b[動作モード制御]")
+        sender.sendMessage("§a/$label follow     プレイヤーを追跡する")
+        sender.sendMessage("§a/$label rotate     プレイヤーの周りをまわる")
+        sender.sendMessage("§a/$label spectator  対象の視点を見る(スペクテーター専用)")
+        sender.sendMessage("§a/$label stop       停止")
 
-        sender.sendMessage("[§b初期設定コマンド]")
-        sender.sendMessage("§a/mcs set target [player]       監視対象を設定する")
-        sender.sendMessage("§a/mcs set camera [player]       カメラプレイヤーを設定する")
-        sender.sendMessage("§a/mcs set position [x,y,z]      監視対象に対する相対位置を指定")
-        sender.sendMessage("§a/mcs set radius [r]            プレイヤーの周りを回る半径を指定")
-        sender.sendMessage("§a/mcs set height [h]            カメラの高さを指定")
-        sender.sendMessage("§a/mcs set nightvision [on/off]  ナイトビジョン")
+        sender.sendMessage("§b[表示モード制御]")
+        sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
+        sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")
+        sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
 
-        sender.sendMessage("[§b開発中]")
-        sender.sendMessage("§a/mcs ")
-        sender.sendMessage("§a/mcs teleport [x,y,z] 　　          特定の座標にカメラを移動する")
-        sender.sendMessage("§a/mcs look     [x,y,z]or[Player] 　　特定の座標を見る")
+        sender.sendMessage("§b[設定コマンド]")
+        sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
+        sender.sendMessage("§a/$label set camera [player]       カメラプレイヤーを設定する")
+        sender.sendMessage("§a/$label set position [x,y,z]      監視対象に対する相対位置を指定")
+        sender.sendMessage("§a/$label set radius [r]            プレイヤーの周りを回る半径を指定")
+        sender.sendMessage("§a/$label set height [h]            カメラの高さを指定")
+        sender.sendMessage("§a/$label set nightvision [on/off]  ナイトビジョン")
 
+        sender.sendMessage("§b[開発中]")
+        sender.sendMessage("§a/$label teleport [x,y,z]              特定の座標にカメラを移動する")
+        sender.sendMessage("§a/$label look     [x,y,z]or[Player] 　　特定の座標を見る")
 
+        sender.sendMessage("[§bカメラファイル]")
+        sender.sendMessage("§a/$label camera files                     カメラ設定一覧" )
+        sender.sendMessage("§a/$label camera select [カメラ設定ファイル]  カメラ設定選択 ")
+        sender.sendMessage("§a/$label camera delete [カメラ設定ファイル]  カメラ設定削除 ")
 
         sender.sendMessage("[§b位置ファイル選択] （開発中)")
-        sender.sendMessage("§a/mcs location file                     位置ファイル一覧")
-        sender.sendMessage("§a/mcs location file select [ファイル名]   位置ファイル選択")
-        sender.sendMessage("§a/mcs location file delete [ファイル名]   位置ファイル削除")
-        sender.sendMessage("[§b位置情報編集] (ファイル選択後有効)")
-        sender.sendMessage("§a/mcs location list                登録位置リストを表示")
-        sender.sendMessage("§a/mcs location add [位置名]         現在位置を登録する")
-        sender.sendMessage("§a/mcs location delete [位置名]      登録位置を削除する")
+        sender.sendMessage("§a/$label location files               位置ファイル一覧")
+        sender.sendMessage("§a/$label location select [ファイル名]   位置ファイル選択")
+        sender.sendMessage("§a/$label location delete [ファイル名]   位置ファイル削除")
+        sender.sendMessage("[§b位置情報編集] (位置ファイル選択後有効)")
+        sender.sendMessage("§a/$label location list                登録位置リストを表示")
+        sender.sendMessage("§a/$label location add [位置名]         現在位置を登録する")
+        sender.sendMessage("§a/$label location delete [位置名]      登録位置を削除する")
 
         sender.sendMessage("§b=======[Author: takatronix /  https://man10.red]=============")
     }
@@ -194,7 +210,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectator","show","hide")
+            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide")
         }
 
         when(args?.get(0)){

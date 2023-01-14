@@ -21,27 +21,34 @@ class Main : JavaPlugin() ,Listener {
     companion object {
         val prefix = "§e[MCR]"
         lateinit var plugin: JavaPlugin
-        lateinit var cameraThread1 : CameraThread
+        const val cameraCount = 4
+        var mc1= CameraThread()
+        var mc2= CameraThread()
+        var mc3= CameraThread()
+        var mc4= CameraThread()
     }
+
     override fun onEnable() {
         plugin = this
         saveDefaultConfig()
-        getCommand("mcs")!!.setExecutor(Command)
-
+        // カメラスレッド生成
+        for(no in 1..cameraCount){
+            val label = "mc$no"
+            getCommand(label)!!.setExecutor(Command)
+            val camera = getCamera(label)
+            camera.cameraName = label
+            camera.load()
+            camera.start()
+        }
         plugin.server.pluginManager.registerEvents(this, plugin)
-
-        // カメラスレッド1の起動
-        cameraThread1 = CameraThread()
-        cameraThread1.cameraName = "camera1"
-        cameraThread1.load()
-        cameraThread1.start()
-
         info("Man10 Camera Plugin Enabled")
     }
 
     override fun onDisable() {
         info("Disabling Man10 Camera Plugin")
-        cameraThread1.running = false
+        for(no in 1..4) {
+            getCamera(no).running = false
+        }
     }
     @EventHandler
     fun onPickUp(e: EntityPickupItemEvent){
@@ -49,12 +56,31 @@ class Main : JavaPlugin() ,Listener {
         if(entity !is Player)
             return
         //  カメラはアイテムを拾わない
-        if(entity.uniqueId == cameraThread1.uniqueId)
-            e.isCancelled = true
+        for(no in 1..cameraCount) {
+            if(entity.uniqueId == getCamera(no).uniqueId)
+                e.isCancelled = true
+        }
     }
 
 }
-
+fun getCamera(label:String="mc1"):CameraThread{
+    return when(label){
+        "mc1" -> Main.mc1
+        "mc2" -> Main.mc2
+        "mc3" -> Main.mc3
+        "mc4" -> Main.mc4
+        else -> Main.mc1
+    }
+}
+fun getCamera(no:Int=1):CameraThread{
+    return when(no){
+        1 -> Main.mc1
+        2 -> Main.mc2
+        3 -> Main.mc3
+        4 -> Main.mc4
+        else -> Main.mc1
+    }
+}
 fun info(message:String,sender:CommandSender? = null){
     Bukkit.getLogger().info(Main.prefix+message)
     sender?.sendMessage(message)
