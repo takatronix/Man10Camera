@@ -1,12 +1,11 @@
 package red.man10.camera
 
-import org.bukkit.Bukkit
-import org.bukkit.GameMode
-import org.bukkit.Location
-import org.bukkit.World
+import org.bukkit.*
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 import org.bukkit.util.Vector
 import java.io.File
 import java.util.*
@@ -23,11 +22,16 @@ enum class CameraMode{
 }
 class CameraThread : Thread() {
     var cameraName = ""
-    var wait:Long = 30
+    var wait:Long = 1000 / 60 // 60fps
     var running = true
     var target: Player? = null
-    var distance:Double = 1.0
-    var height:Double = 1.0
+
+    var radius:Double = 10.0
+
+    var angleStep = 0.08
+    var angle = 0.0
+    // カメラの相対位置
+    var relativePos:Vector= Vector(2.0,2.0,0.0)
 
     // カメラモード
     private var cameraMode:CameraMode = CameraMode.AUTO
@@ -35,6 +39,10 @@ class CameraThread : Thread() {
     // カメラプレイヤー
     private var camera: Player? = null
 
+    val uniqueId:UUID?
+        get() {
+            return camera?.uniqueId
+        }
     //region プロパティ
     // カメラの座標
     val cameraPos:Vector?
@@ -121,8 +129,24 @@ class CameraThread : Thread() {
                 onAutoMode()
             }
         }
+        save(sender)
     }
 
+    fun setRelativePosition(sender: CommandSender,x:Double,y:Double,z:Double){
+        relativePos = Vector(x,y,z)
+        save(sender)
+    }
+    fun setRadius(sender: CommandSender,r:Double){
+        radius = r
+        if(radius < 2.0)
+            radius = 2.0
+        save(sender)
+    }
+
+    fun setHeight(sender: CommandSender,h:Double){
+        relativePos.y = h
+        save(sender)
+    }
     // カメラプレイヤーの設定
     fun setCamera(sender: CommandSender, name:String?):Boolean {
         if(name == null){
@@ -156,7 +180,7 @@ class CameraThread : Thread() {
         }
 
         target = player.player
-        camera?.spectatorTarget = target
+//        camera?.spectatorTarget = target
         info("${cameraName}${player.name}をターゲットに設定しました",sender)
         save(sender)
         return true
@@ -172,25 +196,70 @@ class CameraThread : Thread() {
     }
     fun onFollowMode(){
 
-        var d = targetDistance
+
+        // ターゲットの相対位置のカメラ位置
+        var loc = target?.location?.add(relativePos)
+        var pos = loc?.toVector()
+        var dir = targetPos?.subtract(pos!!)
+        loc?.direction = dir!!
+
+        if(loc?.block?.type == Material.AIR){
 
 
-        lookAt(targetPos)
+        }
+
+        teleport(loc)
+    }
+
+    fun hide(sender:CommandSender){
+        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
+        camera?.gameMode = GameMode.CREATIVE
+    }
+    fun show(sender:CommandSender){
+        camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
+        camera?.gameMode = GameMode.CREATIVE
     }
 
     fun onGoAroundMode(){
+
+        // ターゲットの相対位置のカメラ位置
+        var loc = target?.location?.add(relativePos)
+        var pos = loc?.toVector()
+
+        angle += angleStep
+        if(angle > 360)
+            angle = 0.0
+
+
+        val x = targetPos?.x?.plus(radius * cos(toRadian(angle)))!!
+        val z = targetPos?.z?.plus(radius * sin(toRadian(angle)))!!
+        val y = targetPos?.y?.plus(relativePos.y)!!
+        loc?.set(x,y,z)
+        val dir = targetPos?.subtract(loc!!.toVector())
+        loc?.direction = dir!!
+
+        teleport(loc)
+
     }
 
-
-
-
-
-
-
-    /*
-
-
-*/
+    fun getCircle(center: Location, radius: Double, amount: Int): ArrayList<Location> {
+        val world: World = center.world
+        val increment = 2 * Math.PI / amount
+        val locations: ArrayList<Location> = ArrayList<Location>()
+        for (i in 0 until amount) {
+            val angle = i * increment
+            val x: Double = center.x + radius * cos(angle)
+            val z: Double = center.z + radius * sin(angle)
+            locations.add(Location(world, x, center.y, z))
+        }
+        return locations
+    }
+    fun toRadian(angle: Double): Double {
+        return angle * Math.PI / 180f
+    }
+    fun toAngle(radian: Double): Double {
+        return radian * 180 / Math.PI
+    }
     private fun getRotation(player: Player): Double {
         var rotation = ((player.location.yaw - 90) % 360).toDouble()
         if (rotation < 0) {
@@ -215,18 +284,7 @@ class CameraThread : Thread() {
                 camera?.teleport(loc)
         })
     }
-    fun getCircle(center: Location, radius: Double, amount: Int): ArrayList<Location> {
-        val world: World = center.world
-        val increment = 2 * Math.PI / amount
-        val locations: ArrayList<Location> = ArrayList<Location>()
-        for (i in 0 until amount) {
-            val angle = i * increment
-            val x: Double = center.x + radius * cos(angle)
-            val z: Double = center.z + radius * sin(angle)
-            locations.add(Location(world, x, center.y, z))
-        }
-        return locations
-    }
+
 
     //region ファイル管理
     private fun save(sender:CommandSender?=null): Boolean {
@@ -236,6 +294,9 @@ class CameraThread : Thread() {
             val config = YamlConfiguration.loadConfiguration(file)
             config["target"] = target?.uniqueId.toString()
             config["camera"] = camera?.uniqueId.toString()
+            config["cameraMode"] = cameraMode.toString()
+            config["gameMode"] = camera?.gameMode.toString()
+            config["radius"] = radius
             config.save(file)
         }
         catch (e:Exception){
@@ -253,6 +314,13 @@ class CameraThread : Thread() {
             val config = YamlConfiguration.loadConfiguration(file)
             target = Bukkit.getPlayer(UUID.fromString(config["target"].toString()))
             camera = Bukkit.getPlayer(UUID.fromString(config["camera"].toString()))
+            cameraMode = enumValueOf(config["cameraMode"].toString())
+            radius = config.getDouble("radius")
+            if(radius < 2)
+                radius = 10.0
+
+            val gameMode = enumValueOf<GameMode>(config["gameMode"].toString())
+            camera?.gameMode = gameMode
         }
         catch (e:Exception){
             error("カメラ設定の読み込みに失敗しました:${cameraName} / ${e.localizedMessage}",sender)
@@ -262,10 +330,9 @@ class CameraThread : Thread() {
     }
 
     // カメラ設定ファイルを削除
-    companion object fun delete(sender: CommandSender?, name: String): Boolean {
-        val userdata = File(Main.plugin.dataFolder, File.separator + "camera")
-        val f = File(userdata, File.separator + name + ".yml")
-        if (f.delete()) {
+    companion object fun deleteFile(sender: CommandSender?, name: String): Boolean {
+        val file = File(Main.plugin.dataFolder, "camera${File.separator}$name.yml")
+        if (file.delete()) {
             info("${name}を削除しました",sender)
         } else {
             error("${name}を削除に失敗しました",sender)
@@ -273,5 +340,8 @@ class CameraThread : Thread() {
         return false
     }
     //endregion
+
+
+
 }
 
