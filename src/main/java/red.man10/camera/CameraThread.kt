@@ -2,28 +2,74 @@ package red.man10.camera
 
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Location
+import org.bukkit.World
 import org.bukkit.command.CommandSender
-import org.bukkit.entity.Entity
+import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
+import org.bukkit.util.Vector
+import java.io.File
 import java.util.*
+import kotlin.math.cos
+import kotlin.math.sin
+
 
 enum class CameraMode{
     AUTO,                       // 自動
     SPECTATOR,                  // スペクテーター
+    LOOK,                       // 停止して対象を見る
     FOLLOW,                     // 追跡
     GOAROUND,                   // 周囲を回る
 }
-class CameraThread(_cameraName: String) : Thread() {
-    var cameraName = _cameraName
-    var wait:Long = 500
+class CameraThread : Thread() {
+    var cameraName = ""
+    var wait:Long = 30
     var running = true
     var target: Player? = null
     var distance:Double = 1.0
+    var height:Double = 1.0
+
     // カメラモード
     private var cameraMode:CameraMode = CameraMode.AUTO
 
-    var camera: Player? = null
+    // カメラプレイヤー
+    private var camera: Player? = null
 
+    //region プロパティ
+    // カメラの座標
+    val cameraPos:Vector?
+        get() {
+            return camera?.location?.toVector()
+        }
+    // カメラの向き
+    val cameraDir:Vector?
+        get() {
+            return camera?.location?.direction
+        }
+    // ターゲットの座標
+    private val targetPos:Vector?
+        get() {
+            return target?.location?.toVector()
+        }
+    // ターゲットの向き
+    val targetDir:Vector?
+        get() {
+            return target?.location?.direction
+        }
+    // ターゲット-カメラ間距離
+    val targetDistance:Double?
+        get(){
+            return target?.location?.distance(camera?.location!!)
+        }
+    // カメラ->ターゲットのベクトル
+    val toTargetVec:Vector?
+        get(){
+            return targetPos?.subtract(cameraPos!!)
+        }
+
+    //endregion
+
+    // スレッドメイン
     override fun run() {
         info("Camera thread started:${cameraName}")
         while(running){
@@ -35,12 +81,15 @@ class CameraThread(_cameraName: String) : Thread() {
                 CameraMode.SPECTATOR -> onSpectatorMode()
                 CameraMode.FOLLOW -> onFollowMode()
                 CameraMode.GOAROUND -> onGoAroundMode()
+                CameraMode.LOOK -> onSpectatorMode()
             }
-            info("$cameraName is active")
+           // info("$cameraName is active")
         }
         info("Camera thread ended:${cameraName}")
     }
 
+    // スレッドが動作可能か？
+    // カメラと対象がオンラインの時のみ動作可能
     private fun canWork() :Boolean{
         if(camera == null || camera?.isOnline == false)
             return false
@@ -49,8 +98,29 @@ class CameraThread(_cameraName: String) : Thread() {
         return true
     }
 
-    fun setMode(mode:CameraMode){
+    fun setMode(sender: CommandSender, mode:CameraMode){
         cameraMode = mode
+        camera?.gameMode = GameMode.CREATIVE
+        camera?.gameMode = GameMode.SPECTATOR
+        camera?.spectatorTarget  = null
+        when(cameraMode){
+            CameraMode.SPECTATOR -> {
+                info("${cameraName}:スペクテーターモード",sender)
+                camera?.spectatorTarget = target
+            }
+            CameraMode.FOLLOW -> {
+                info("${cameraName}:フォローモード",sender)
+            }
+            CameraMode.GOAROUND -> {
+            }
+            CameraMode.LOOK -> {
+                info("${cameraName}:ルックモード",sender)
+                onLookMode()
+            }
+            CameraMode.AUTO -> {
+                onAutoMode()
+            }
+        }
     }
 
     // カメラプレイヤーの設定
@@ -68,7 +138,8 @@ class CameraThread(_cameraName: String) : Thread() {
         camera = player.player
         camera!!.gameMode = GameMode.SPECTATOR
         camera!!.spectatorTarget = target
-        info("${player.name}をカメラに設定しました",sender)
+        info("${cameraName}: ${player.name}をカメラに設定しました",sender)
+        save(sender)
         return true
     }
 
@@ -86,7 +157,8 @@ class CameraThread(_cameraName: String) : Thread() {
 
         target = player.player
         camera?.spectatorTarget = target
-        info("${player.name}をターゲットに設定しました",sender)
+        info("${cameraName}${player.name}をターゲットに設定しました",sender)
+        save(sender)
         return true
     }
 
@@ -95,9 +167,111 @@ class CameraThread(_cameraName: String) : Thread() {
     }
     fun onSpectatorMode(){
     }
-    fun onFollowMode(){
+    fun onLookMode(){
+        lookAt(targetPos)
     }
+    fun onFollowMode(){
+
+        var d = targetDistance
+
+
+        lookAt(targetPos)
+    }
+
     fun onGoAroundMode(){
     }
+
+
+
+
+
+
+
+    /*
+
+
+*/
+    private fun getRotation(player: Player): Double {
+        var rotation = ((player.location.yaw - 90) % 360).toDouble()
+        if (rotation < 0) {
+            rotation += 360.0
+        }
+        return rotation
+    }
+
+    // ポジションカメラをむける
+    private fun lookAt(pos:Vector?){
+        if(pos == null)
+            return
+        // カメラ->ターゲットのベクトルを設定する
+        val loc = camera?.location
+        loc?.direction = toTargetVec!!
+        teleport(loc)
+    }
+    // テレポートする
+    private fun teleport(loc:Location?){
+        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            if(loc != null && camera != null && camera?.isOnline == true)
+                camera?.teleport(loc)
+        })
+    }
+    fun getCircle(center: Location, radius: Double, amount: Int): ArrayList<Location> {
+        val world: World = center.world
+        val increment = 2 * Math.PI / amount
+        val locations: ArrayList<Location> = ArrayList<Location>()
+        for (i in 0 until amount) {
+            val angle = i * increment
+            val x: Double = center.x + radius * cos(angle)
+            val z: Double = center.z + radius * sin(angle)
+            locations.add(Location(world, x, center.y, z))
+        }
+        return locations
+    }
+
+    //region ファイル管理
+    private fun save(sender:CommandSender?=null): Boolean {
+        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraName.yml")
+        info("saving ${file.absolutePath}")
+        try{
+            val config = YamlConfiguration.loadConfiguration(file)
+            config["target"] = target?.uniqueId.toString()
+            config["camera"] = camera?.uniqueId.toString()
+            config.save(file)
+        }
+        catch (e:Exception){
+            error("カメラ設定の保存に失敗しました:${cameraName} / ${e.localizedMessage}",sender)
+            return false
+        }
+        info("${file.path}に保存")
+        return true
+    }
+
+    fun load(sender:CommandSender? = null): Boolean {
+        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraName.yml")
+        info("loading ${file.absolutePath}")
+        try{
+            val config = YamlConfiguration.loadConfiguration(file)
+            target = Bukkit.getPlayer(UUID.fromString(config["target"].toString()))
+            camera = Bukkit.getPlayer(UUID.fromString(config["camera"].toString()))
+        }
+        catch (e:Exception){
+            error("カメラ設定の読み込みに失敗しました:${cameraName} / ${e.localizedMessage}",sender)
+            return false
+        }
+        return true
+    }
+
+    // カメラ設定ファイルを削除
+    companion object fun delete(sender: CommandSender?, name: String): Boolean {
+        val userdata = File(Main.plugin.dataFolder, File.separator + "camera")
+        val f = File(userdata, File.separator + name + ".yml")
+        if (f.delete()) {
+            info("${name}を削除しました",sender)
+        } else {
+            error("${name}を削除に失敗しました",sender)
+        }
+        return false
+    }
+    //endregion
 }
 

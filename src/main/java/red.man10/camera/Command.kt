@@ -17,6 +17,7 @@ object Command : CommandExecutor, TabCompleter {
             "help" -> showHelp(sender)
             "set" -> set(sender,args)
             "follow" -> follow(sender,args)
+            "spectator" -> spectator(sender,args)
         }
 
 
@@ -24,13 +25,11 @@ object Command : CommandExecutor, TabCompleter {
     }
 
     private fun follow(sender: CommandSender,args: Array<out String>){
-        val targetName = args[1]
-        val p = Bukkit.getOfflinePlayerIfCached(targetName)
-        if (p == null){
-            sender.sendMessage("&cプレイヤーが存在しません")
-            return
-        }
-        sender.sendMessage("following ${args[0]}")
+        Main.cameraThread1.setMode(sender,CameraMode.FOLLOW)
+
+    }
+    private fun spectator(sender: CommandSender,args: Array<out String>){
+        Main.cameraThread1.setMode(sender,CameraMode.SPECTATOR)
 
     }
 
