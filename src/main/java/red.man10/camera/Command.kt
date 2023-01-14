@@ -20,6 +20,8 @@ object Command : CommandExecutor, TabCompleter {
             "follow" -> follow(sender,args)
             "rotate" -> rotate(sender,args)
             "spectator" -> spectator(sender,args)
+         //   "look" -> look(sender,args)
+         //   "teleport" -> teleport(sender,args)
             "show" -> Main.cameraThread1.show(sender)
             "hide" -> Main.cameraThread1.hide(sender)
         }
@@ -77,6 +79,35 @@ object Command : CommandExecutor, TabCompleter {
         }
         error("パラメータは、x,y,zの相対座標で指定してください。",sender)
     }
+    private fun look(sender: CommandSender,value:String){
+        val xyz= value.split(",")
+        if(xyz.size == 3){
+            try{
+                val x = xyz[0].toDouble()
+                val y = xyz[1].toDouble()
+                val z = xyz[2].toDouble()
+                return
+            }catch (ex:Exception){
+                error(ex.localizedMessage)
+            }
+        }
+        error("パラメータは、x,y,zの相対座標で指定してください。",sender)
+    }
+    private fun teleport(sender: CommandSender,value:String){
+        val xyz= value.split(",")
+        if(xyz.size == 3){
+            try{
+                val x = xyz[0].toDouble()
+                val y = xyz[1].toDouble()
+                val z = xyz[2].toDouble()
+               // Main.cameraThread1.teleport(sender,x,y,z)
+                return
+            }catch (ex:Exception){
+                error(ex.localizedMessage)
+            }
+        }
+        error("パラメータは、x,y,zの相対座標で指定してください。",sender)
+    }
 
     private fun setRadius(sender: CommandSender,value:String){
         val text= value.split(",")
@@ -125,16 +156,25 @@ object Command : CommandExecutor, TabCompleter {
 
     private fun showHelp(sender: CommandSender){
         sender.sendMessage("§b====================[Man10 Camera System]====================")
-        sender.sendMessage("§b[特定ユーザー追跡]")
-        sender.sendMessage("§a/mcs follow  プレイヤーを追跡する")
-        sender.sendMessage("§a/mcs rotate  プレイヤーの周りをまわる")
+        sender.sendMessage("[§kカメラモード制御]")
+        sender.sendMessage("§a/mcs follow     プレイヤーを追跡する")
+        sender.sendMessage("§a/mcs rotate     プレイヤーの周りをまわる")
+        sender.sendMessage("§a/mcs spectator  対象の視点を見る(サバイバル)")
+        sender.sendMessage("§a/mcs show       カメラの状態のボディをみせる(クリエイティブ)")
+        sender.sendMessage("§a/mcs hide       カメラのボディを見せない(クリエイティブ)")
+
         sender.sendMessage("[§b初期設定コマンド]")
-        sender.sendMessage("§a/mcs set target [player]  監視対象を設定する")
-        sender.sendMessage("§a/mcs set camera [player]  カメラプレイヤーを設定する")
-        sender.sendMessage("§a/mcs set position [x,y,z] 監視対象に対する相対位置を指定")
-        sender.sendMessage("§a/mcs set radius [r]  プレイヤーの周りを回る半径を指定")
-        sender.sendMessage("§a/mcs set height [h]  カメラの高さを指定")
+        sender.sendMessage("§a/mcs set target [player]       監視対象を設定する")
+        sender.sendMessage("§a/mcs set camera [player]       カメラプレイヤーを設定する")
+        sender.sendMessage("§a/mcs set position [x,y,z]      監視対象に対する相対位置を指定")
+        sender.sendMessage("§a/mcs set radius [r]            プレイヤーの周りを回る半径を指定")
+        sender.sendMessage("§a/mcs set height [h]            カメラの高さを指定")
         sender.sendMessage("§a/mcs set nightvision [on/off]  ナイトビジョン")
+
+        sender.sendMessage("[§b開発中]")
+        sender.sendMessage("§a/mcs ")
+        sender.sendMessage("§a/mcs teleport [x,y,z] 　　          特定の座標にカメラを移動する")
+        sender.sendMessage("§a/mcs look     [x,y,z]or[Player] 　　特定の座標を見る")
 
 
 
@@ -154,7 +194,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","location")
+            return listOf("set","follow","rotate","look","spectator","show","hide")
         }
 
         when(args?.get(0)){
