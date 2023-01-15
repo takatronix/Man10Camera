@@ -27,6 +27,7 @@ object Command : CommandExecutor, TabCompleter {
 
         when(args[0]){
             "help" -> showHelp(label,sender)
+            "youtube" -> youtube(label,sender)
             "set" -> set(label,sender,args)
             "follow" -> follow(label,sender,args)
             "rotate" -> rotate(label,sender,args)
@@ -68,7 +69,7 @@ object Command : CommandExecutor, TabCompleter {
 
     // set [key] [value]　でカメラ設定を保存
     private fun set(label:String,sender: CommandSender,args: Array<out String>){
-        info("args.size = ${args.size}")
+
         if(args.size != 3){
             showHelp(label,sender)
             return
@@ -83,7 +84,8 @@ object Command : CommandExecutor, TabCompleter {
             "radius" -> setRadius(label,sender,name)
             "height" -> setHeight(label,sender,name)
             "nightvision" -> setNightVision(label,sender,name)
-            "broardcast" -> setBroardcast(label,sender,name)
+            "broadcast" -> setBroadcast(label,sender,name)
+            "notification" -> setNotification(label,sender,name)
         }
     }
     private fun setPosition(label:String,sender: CommandSender,value:String){
@@ -163,13 +165,18 @@ object Command : CommandExecutor, TabCompleter {
             else -> getCamera(label).setNightVision(sender,false)
         }
     }
-    private fun setBroardcast(label:String,sender: CommandSender,value:String){
+    private fun setBroadcast(label:String,sender: CommandSender,value:String){
         when(value){
-            "on" -> getCamera(label).setBoradcast(sender,true)
-            else -> getCamera(label).setBoradcast(sender,false)
+            "on" -> getCamera(label).setBroadcast(sender,true)
+            else -> getCamera(label).setBroadcast(sender,false)
         }
     }
-
+    private fun setNotification(label:String,sender: CommandSender,value:String){
+        when(value){
+            "on" -> getCamera(label).setNotification(sender,true)
+            else -> getCamera(label).setNotification(sender,false)
+        }
+    }
     private fun showHelp(label:String,sender: CommandSender){
         sender.sendMessage("§b====================[Man10 Camera System]====================")
         sender.sendMessage("§amc1/mc2/mc3/mc4 カメラ1/カメラ2/カメラ3/カメラ4を制御")
@@ -191,7 +198,8 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label set radius [r]            プレイヤーの周りを回る半径を指定")
         sender.sendMessage("§a/$label set height [h]            カメラの高さを指定")
         sender.sendMessage("§a/$label set nightvision [on/off]  ナイトビジョン")
-        sender.sendMessage("§a/$label set broadcast [on/off]    ")
+        sender.sendMessage("§a/$label set broadcast [on/off]    通知メッセージの全体通知on/off")
+        sender.sendMessage("§a/$label set message [on/off]      個人通知メッセージ")
 
         sender.sendMessage("§b[宣伝系]")
         sender.sendMessage("§a/$label youtube      　　　Youtubeチャンネルの紹介")
@@ -216,12 +224,17 @@ object Command : CommandExecutor, TabCompleter {
 
         sender.sendMessage("§b=======[Author: takatronix /  https://man10.red]=============")
     }
+    private fun youtube(label:String,sender: CommandSender){
+        Bukkit.getOnlinePlayers().forEach {
+            player -> player.sendMessage(Main.broadcastMessage)
+        }
+    }
 
     // タブ補完
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide")
+            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","youtube")
         }
 
         when(args?.get(0)){
@@ -232,7 +245,7 @@ object Command : CommandExecutor, TabCompleter {
 
     private fun onTabSet(args: Array<out String>?) : List<String>?{
         if(args?.size == 2)
-            return listOf("target","camera","position","radius","height","nightvision")
+            return listOf("target","camera","position","radius","height","nightvision","notification","broadcast")
         return null
     }
 

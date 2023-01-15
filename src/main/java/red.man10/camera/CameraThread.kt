@@ -39,7 +39,9 @@ class CameraThread : Thread() {
     var angleStep = 0.12            // 回転速度
     var angle = 0.0
     var nightVision = false
-    var broadcast = false
+    var broadcast = true
+    var notification = true
+
     // カメラの相対位置
     var relativePos:Vector= Vector(2.0,2.0,0.0)
     // カメラモード
@@ -119,6 +121,19 @@ class CameraThread : Thread() {
         save(sender)
     }
 
+    fun notifyUsers(sender: CommandSender,target:Player?){
+        Bukkit.getOnlinePlayers().forEach {
+            p ->
+            run {
+                if(broadcast)
+                    p.sendMessage("§a§l"+target?.name+Main.notifyMessage)
+                else{
+                    if(notification && target == p)
+                        p.sendMessage("§a§l"+target?.name+Main.notifyMessage)
+                }
+            }
+        }
+    }
 
     //region 基本コマンド
     // 特定プレイヤーを追跡
@@ -128,6 +143,7 @@ class CameraThread : Thread() {
             target = player
         }
         info("${cameraName}をフォローモードに設定",sender)
+        notifyUsers(sender,player)
     }
     public fun spectator(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.SPECTATOR)
@@ -136,6 +152,7 @@ class CameraThread : Thread() {
             camera?.spectatorTarget = player
         }
         info("${cameraName}をスペクテーターモードで監視",sender)
+        notifyUsers(sender,player)
     }
     // 特定プレイヤーを回転しながら追跡
     public fun rotate(sender: CommandSender,player:Player? = null){
@@ -144,6 +161,7 @@ class CameraThread : Thread() {
             target = player
         }
         info("${cameraName}を回転モードに設定",sender)
+        notifyUsers(sender,player)
     }
     // カメラを固定でプレイヤーを注視
     public fun look(sender: CommandSender,player:Player? = null){
@@ -152,11 +170,13 @@ class CameraThread : Thread() {
             target = player
         }
         info("${cameraName}をルックモードに設定",sender)
+        notifyUsers(sender,player)
     }
     // カメラ停止
     public fun stop(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.STOP)
         info("${cameraName}を停止させました",sender)
+        notifyUsers(sender,player)
     }
     //endregion
 
@@ -211,6 +231,7 @@ class CameraThread : Thread() {
         loc?.direction = dir!!
         // TODO:カメラがブロックとかぶっていたら、距離を近づける
         if(loc?.block?.type == Material.AIR){
+
         }
         teleport(loc)
     }
@@ -243,12 +264,18 @@ class CameraThread : Thread() {
             camera?.removePotionEffect(PotionEffectType.NIGHT_VISION)
         nightVision = flag
         save(sender)
+        info("ナイトビジョンを{$flag}にしました",sender)
     }
-    fun setBoradcast(sender:CommandSender,flag:Boolean){
+    fun setBroadcast(sender:CommandSender,flag:Boolean){
         broadcast = flag
         save(sender)
+        info("全体通知を{$flag}にしました",sender)
     }
-
+    fun setNotification(sender:CommandSender,flag:Boolean){
+        notification = flag
+        save(sender)
+        info("個人通知を{$flag}にしました",sender)
+    }
     private fun onRotateMode(){
         // ターゲットの相対位置のカメラ位置
         val loc = target?.location?.add(relativePos)
@@ -295,6 +322,7 @@ class CameraThread : Thread() {
             config["radius"] = radius
             config["nightVision"] = nightVision
             config["broadcast"] = broadcast
+            config["notification"] = notification
             config.save(file)
         }
         catch (e:Exception){
@@ -325,6 +353,7 @@ class CameraThread : Thread() {
 
             nightVision = config.getBoolean("nightVision")
             broadcast = config.getBoolean("broadcast")
+            notification = config.getBoolean("notification")
 
             // 回転半径
             radius = config.getDouble("radius")

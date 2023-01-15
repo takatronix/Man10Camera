@@ -20,6 +20,9 @@ import org.bukkit.event.entity.PlayerDeathEvent
 
 class Main : JavaPlugin() ,Listener {
     companion object {
+        val broadcastMessage = "§c§lYoutubeライブ配信中!! §f§l->  §f§l§nhttps://www.youtube.com/@man10server/live"
+        val notifyMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
+
         val prefix = "§e[MCR]"
         lateinit var plugin: JavaPlugin
         const val cameraCount = 4
