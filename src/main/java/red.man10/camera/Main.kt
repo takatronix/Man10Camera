@@ -19,7 +19,8 @@ import java.util.concurrent.ConcurrentHashMap
 class Main : JavaPlugin() ,Listener {
     companion object {
         val broadcastMessage = "§c§lYoutubeライブ配信中!! §f§l->  §f§l§nhttps://www.youtube.com/@man10server/live"
-        val notifyMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
+        val liveMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
+        val spectatoressage = "§f§lさんの視点を§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
         val prefix = "§e[MCR]"
         lateinit var plugin: JavaPlugin
         const val cameraCount = 4
@@ -39,10 +40,14 @@ class Main : JavaPlugin() ,Listener {
             val label = "mc$no"
             getCommand(label)!!.setExecutor(Command)
             val camera = getCamera(label)
-            camera.cameraName = label
+            camera.cameraLabel = label
             camera.load()
             camera.start()
         }
+        mc1.cameraName = "[メインカメラ]"
+        mc2.cameraName = "[サブカメラ]"
+        mc3.cameraName = "[カメラ３]"
+        mc4.cameraName = "[カメラ4]"
         // リロード後のユーザーはjoinイベントがないためデータを作る必要がある
         Bukkit.getOnlinePlayers().forEach { player ->  playerData.putIfAbsent(player.uniqueId,PlayerData())}
         plugin.server.pluginManager.registerEvents(this, plugin)

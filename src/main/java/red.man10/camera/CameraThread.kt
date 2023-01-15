@@ -46,7 +46,8 @@ class CameraThread : Thread() {
     private var visibleMode:VisibleMode = VisibleMode.SHOW  // 表示モード
     //endregion
     //region プロパティ
-    var cameraName = ""                     // カメラ名
+    var cameraLabel = ""                     // カメララベル
+    var cameraName = ""                     // カメラ名称
     var running = true                      // スレッド終了フラグ
 
     private val cameraPlayer:Player?
@@ -86,7 +87,7 @@ class CameraThread : Thread() {
 
     // スレッドメイン
     override fun run() {
-        info("Camera thread started:${cameraName}")
+        info("Camera thread started:${cameraLabel}")
         while(running){
             sleep(wait)
             if(!canWork())
@@ -101,7 +102,7 @@ class CameraThread : Thread() {
                 else-> onStopMode()
             }
         }
-        info("Camera thread ended:${cameraName}")
+        info("Camera thread ended:${cameraLabel}")
     }
     // スレッドが動作可能か？
     private fun canWork() :Boolean{
@@ -142,17 +143,17 @@ class CameraThread : Thread() {
     }
 
     // 鯖にいるユーザーに通知する
-    private fun notifyUsers(sender: CommandSender, target:Player?){
+    private fun notifyUsers(message:String,sender: CommandSender, target:Player?){
         Bukkit.getOnlinePlayers().forEach {
             p ->
             run {
                 if(target == null)
                     return
                 if(broadcast)
-                    p.sendMessage("§a§l"+ target.name +Main.notifyMessage)
+                    p.sendMessage("§e§l"+cameraName+" §a§l"+ target.name +message)
                 else{
                     if(notification && target == p)
-                        p.sendMessage("§a§l"+ target.name +Main.notifyMessage)
+                        p.sendMessage("§e§l"+cameraName+" §a§l"+ target.name +message)
                 }
             }
         }
@@ -165,17 +166,18 @@ class CameraThread : Thread() {
         if(player?.isOnline == true){
             target = player.uniqueId
         }
-        info("${cameraName}をフォローモードに設定",sender)
-        notifyUsers(sender,player)
+        info("${cameraLabel}をフォローモードに設定",sender)
+        notifyUsers(Main.liveMessage,sender,player)
     }
     fun spectator(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.SPECTATOR)
         save(sender)
         if(player?.isOnline == true){
+            target = player.uniqueId
             cameraPlayer?.spectatorTarget = targetPlayer
         }
-        info("${cameraName}をスペクテーターモードで監視",sender)
-        notifyUsers(sender,player)
+        info("${cameraLabel}をスペクテーターモードで監視",sender)
+        notifyUsers(Main.spectatoressage,sender,player)
     }
     // 特定プレイヤーを回転しながら追跡
     fun rotate(sender: CommandSender,player:Player? = null){
@@ -183,8 +185,8 @@ class CameraThread : Thread() {
         if(player?.isOnline == true){
             target = player.uniqueId
         }
-        info("${cameraName}を回転モードに設定",sender)
-        notifyUsers(sender,player)
+        info("${cameraLabel}を回転モードに設定",sender)
+        notifyUsers(Main.liveMessage,sender,player)
     }
     // カメラを固定でプレイヤーを注視
     fun look(sender: CommandSender,player:Player? = null){
@@ -192,13 +194,13 @@ class CameraThread : Thread() {
         if(player?.isOnline == true){
             target = player.uniqueId
         }
-        info("${cameraName}をルックモードに設定",sender)
-        notifyUsers(sender,player)
+        info("${cameraLabel}をルックモードに設定",sender)
+        notifyUsers(Main.liveMessage,sender,player)
     }
     // カメラ停止
     fun stop(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.STOP)
-        info("${cameraName}を停止させました",sender)
+        info("${cameraLabel}を停止させました",sender)
     }
     //endregion
 
@@ -226,7 +228,7 @@ class CameraThread : Thread() {
     fun setCamera(sender: CommandSender, name:String?):Boolean {
         val player = getOfflinePlayer(sender,name) ?: return false
         camera = player.player?.uniqueId
-        info("${cameraName}: ${player.name}をカメラに設定しました",sender)
+        info("${cameraLabel}: ${player.name}をカメラに設定しました",sender)
         save(sender)
         return true
     }
@@ -235,7 +237,7 @@ class CameraThread : Thread() {
     fun setTarget(sender: CommandSender, name:String?):Boolean {
         val player = getOfflinePlayer(sender,name) ?: return false
         target = player.player?.uniqueId
-        info("${cameraName}${player.name}をターゲットに設定しました",sender)
+        info("${cameraLabel}${player.name}をターゲットに設定しました",sender)
         save(sender)
         return true
     }
@@ -340,7 +342,7 @@ class CameraThread : Thread() {
     }
     //region ファイル管理
     private fun save(sender:CommandSender?=null): Boolean {
-        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraName.yml")
+        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraLabel.yml")
         info("saving ${file.absolutePath}")
         try{
             val config = YamlConfiguration.loadConfiguration(file)
@@ -356,7 +358,7 @@ class CameraThread : Thread() {
             config.save(file)
         }
         catch (e:Exception){
-            error("カメラ設定の保存に失敗しました:${cameraName} / ${e.localizedMessage}",sender)
+            error("カメラ設定の保存に失敗しました:${cameraLabel} / ${e.localizedMessage}",sender)
             return false
         }
         info("${file.path}に保存")
@@ -364,7 +366,7 @@ class CameraThread : Thread() {
     }
 
     fun load(sender:CommandSender? = null): Boolean {
-        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraName.yml")
+        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraLabel.yml")
         info("loading ${file.absolutePath}")
         try{
             val config = YamlConfiguration.loadConfiguration(file)
@@ -392,7 +394,7 @@ class CameraThread : Thread() {
             cameraPlayer?.gameMode = gameMode
         }
         catch (e:Exception){
-            error("カメラ設定の読み込みに失敗しました:${cameraName} / ${e.localizedMessage}",sender)
+            error("カメラ設定の読み込みに失敗しました:${cameraLabel} / ${e.localizedMessage}",sender)
             return false
         }
         return true
