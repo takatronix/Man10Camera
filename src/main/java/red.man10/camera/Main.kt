@@ -13,14 +13,8 @@ import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-
 
 class Main : JavaPlugin() ,Listener {
     companion object {
@@ -37,9 +31,6 @@ class Main : JavaPlugin() ,Listener {
         var playerData = ConcurrentHashMap<UUID, PlayerData>()
     }
 
-    fun test(){
-        var list = playerData.toList()
-    }
     override fun onEnable() {
         plugin = this
         saveDefaultConfig()
@@ -65,26 +56,7 @@ class Main : JavaPlugin() ,Listener {
         }
     }
 
-    private fun isCamera(player:Player?):Boolean{
-        if(player == null)
-            return false
-        for(no in 1..cameraCount) {
-            if(getCamera(no).uniqueId == player.uniqueId){
-                return true
-            }
-        }
-        return false
-    }
-    private fun isTarget(player:Player?):Boolean{
-        if(player == null)
-            return false
-        for(no in 1..cameraCount) {
-            if(getCamera(no).targetUniqueId == player.uniqueId){
-                return true
-            }
-        }
-        return false
-    }
+    //region イベントコールバック
     @EventHandler
     fun onPickUp(e: EntityPickupItemEvent){
         val entity=e.entity
@@ -132,7 +104,7 @@ class Main : JavaPlugin() ,Listener {
         playerData.remove(e.player.uniqueId)
     }
 
-    //      銃や弓などのダメージイベント
+    // 銃や弓などのダメージイベント
     @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
         if (e.damager is Projectile && e.entity is Player) {
@@ -142,7 +114,6 @@ class Main : JavaPlugin() ,Listener {
 
         }
     }
-
     //      ヒットダメージ等
     @EventHandler
     fun PlayerDamageReceive(e: EntityDamageByEntityEvent) {
@@ -150,9 +121,12 @@ class Main : JavaPlugin() ,Listener {
             val damagedPlayer = e.entity as Player
         }
     }
-
+    //endregion
 
 }
+
+//region 共通関数
+// ラベルからカメラを取得
 fun getCamera(label:String="mc1"):CameraThread{
     return when(label){
         "mc1" -> Main.mc1
@@ -162,6 +136,7 @@ fun getCamera(label:String="mc1"):CameraThread{
         else -> Main.mc1
     }
 }
+// 番号からカメラを取得
 fun getCamera(no:Int=1):CameraThread{
     return when(no){
         1 -> Main.mc1
@@ -171,13 +146,36 @@ fun getCamera(no:Int=1):CameraThread{
         else -> Main.mc1
     }
 }
+// 通常ログ
 fun info(message:String,sender:CommandSender? = null){
     Bukkit.getLogger().info(Main.prefix+message)
     sender?.sendMessage(message)
 }
+// エラーログ
 fun error(message:String,sender:CommandSender? = null) {
     Bukkit.getLogger().severe(Main.prefix+message)
     sender?.sendMessage(message)
 }
 
+private fun isCamera(player:Player?):Boolean{
+    if(player == null)
+        return false
+    for(no in 1..Main.cameraCount) {
+        if(getCamera(no).uniqueId == player.uniqueId){
+            return true
+        }
+    }
+    return false
+}
+private fun isTarget(player:Player?):Boolean{
+    if(player == null)
+        return false
+    for(no in 1..Main.cameraCount) {
+        if(getCamera(no).targetUniqueId == player.uniqueId){
+            return true
+        }
+    }
+    return false
+}
+//endregion
 

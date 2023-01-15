@@ -173,6 +173,7 @@ object Command : CommandExecutor, TabCompleter {
             else -> getCamera(label).setNotification(sender,false)
         }
     }
+    // ヘルプメッセージ
     private fun showHelp(label:String,sender: CommandSender){
         sender.sendMessage("§b====================[Man10 Camera System]====================")
         sender.sendMessage("§amc1/mc2/mc3/mc4 カメラ1/カメラ2/カメラ3/カメラ4を制御")
@@ -181,11 +182,6 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label rotate (player)    プレイヤーの周りをまわる")
         sender.sendMessage("§a/$label spectator (player) 対象の視点を見る(スペクテーター専用)")
         sender.sendMessage("§a/$label stop               停止")
-
-        sender.sendMessage("§b[表示モード制御]")
-        sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
-        sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")
-        sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
 
         sender.sendMessage("§b[設定コマンド]設定は保存されます")
         sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
@@ -196,6 +192,10 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label set nightvision [on/off]  ナイトビジョン")
         sender.sendMessage("§a/$label set broadcast [on/off]    通知メッセージの全体通知on/off")
         sender.sendMessage("§a/$label set message [on/off]      個人通知メッセージ")
+        sender.sendMessage("§b[表示モード設定]")
+        sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
+        sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")
+        sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
 
         sender.sendMessage("§b[宣伝系]")
         sender.sendMessage("§a/$label live      　　　ライブ配信の告知")
@@ -204,7 +204,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label teleport [x,y,z] or(player)    特定の座標にカメラを移動する")
         sender.sendMessage("§a/$label look     [x,y,z]or[Player] 　　特定の座標を見る")
 
-        sender.sendMessage("[§bカメラファイル]")
+        sender.sendMessage("[§bカメラファイル](未完成)")
         sender.sendMessage("§a/$label camera files                     カメラ設定一覧" )
         sender.sendMessage("§a/$label camera select [カメラ設定ファイル]  カメラ設定選択 ")
         sender.sendMessage("§a/$label camera delete [カメラ設定ファイル]  カメラ設定削除 ")

@@ -11,6 +11,7 @@ import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
 
+//region 定義
 // カメラの動作モード
 enum class CameraMode{
     STOP,                       // 自動
@@ -26,14 +27,14 @@ enum class VisibleMode {
     SHOW,                       // 透明で頭だけ
     SHOWBODY                    // ボディも表示
 }
-
+//endregion
 class CameraThread : Thread() {
-    var cameraName = ""                     // カメラ名
-    var running = true                      // スレッド終了フラグ
-    private var wait:Long = 1000 /60        // 更新サイクル
+    //region 内部変数
+    private var wait:Long = 1000 / 60       // 更新サイクル
     private var target: UUID? = null        // 監視対象
     private var camera: UUID? = null        // カメラプレーヤ
-
+    private var angle:Double = 0.0          // 現在のカメラの回転角度(0-360)
+    //endregion
     //region 設定
     private var radius:Double = 10.0        // 回転半径
     private var angleStep = 0.08            // 回転速度
@@ -44,10 +45,10 @@ class CameraThread : Thread() {
     private var cameraMode:CameraMode = CameraMode.AUTO    // 動作モード
     private var visibleMode:VisibleMode = VisibleMode.SHOW  // 表示モード
     //endregion
-    //region 内部変数
-    private var angle:Double = 0.0                   // 現在のカメラの回転角度(0-360)
-    //endregion
     //region プロパティ
+    var cameraName = ""                     // カメラ名
+    var running = true                      // スレッド終了フラグ
+
     private val cameraPlayer:Player?
         get() {
             if(camera == null)
@@ -102,7 +103,6 @@ class CameraThread : Thread() {
         }
         info("Camera thread ended:${cameraName}")
     }
-
     // スレッドが動作可能か？
     private fun canWork() :Boolean{
         when(cameraMode){
@@ -380,11 +380,9 @@ class CameraThread : Thread() {
 
             cameraMode = enumValueOf(config["cameraMode"].toString())
             visibleMode = enumValueOf(config["visibleMode"].toString())
-
             nightVision = config.getBoolean("nightVision")
             broadcast = config.getBoolean("broadcast")
             notification = config.getBoolean("notification")
-
             // 回転半径
             radius = config.getDouble("radius")
             if(radius < 1.0)
