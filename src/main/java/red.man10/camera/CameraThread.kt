@@ -30,21 +30,24 @@ enum class VisibleMode {
 }
 
 class CameraThread : Thread() {
-    var cameraName = ""                 // カメラ名
-    var running = true                  // スレッド終了フラグ
-    private var wait:Long = 1000 /60    // 更新サイクル
-    private var target: Player? = null  // 監視対象
-    private var camera: Player? = null  //　カメラプレーヤ
+    var cameraName = ""                     // カメラ名
+    var running = true                      // スレッド終了フラグ
+    private var wait:Long = 1000 /60        // 更新サイクル
+    private var target: Player? = null      // 監視対象
+    private var camera: Player? = null      //　カメラプレーヤ
     //region 設定
     private var radius:Double = 10.0        // 回転半径
     private var angleStep = 0.08            // 回転速度
-    private var angle = 0.0                 //
-    private var nightVision = false         //
-    private var broadcast = true            // カメラ配信がはじまったのを全体に通知するか
-    private var notification = true         // 個人に通知するか
+    private var nightVision = false         // 暗視設定
+    private var broadcast = true            // 配信を全体に通知するか
+    private var notification = true         // 配信を個人に通知するか
     private var relativePos:Vector= Vector(2.0,2.0,0.0)    // カメラの相対位置
     private var cameraMode:CameraMode = CameraMode.AUTO    // 動作モード
     private var visibleMode:VisibleMode = VisibleMode.SHOW  // 表示モード
+    //endregion
+    //region 内部変数
+    private var angle:Double = 0.0                   // 現在のカメラの回転角度(0-360)
+    //endregion
 
     //region プロパティ
     // カメラのUUID

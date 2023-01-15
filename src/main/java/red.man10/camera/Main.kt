@@ -19,7 +19,6 @@ class Main : JavaPlugin() ,Listener {
     companion object {
         val broadcastMessage = "§c§lYoutubeライブ配信中!! §f§l->  §f§l§nhttps://www.youtube.com/@man10server/live"
         val notifyMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
-
         val prefix = "§e[MCR]"
         lateinit var plugin: JavaPlugin
         const val cameraCount = 4
@@ -27,8 +26,6 @@ class Main : JavaPlugin() ,Listener {
         var mc2= CameraThread()
         var mc3= CameraThread()
         var mc4= CameraThread()
-
-
     }
 
     override fun onEnable() {
@@ -87,7 +84,7 @@ class Main : JavaPlugin() ,Listener {
 
     @EventHandler
     fun onPlayerQuit(e: PlayerQuitEvent) {
-        val p: Player = e.getPlayer()
+        val p: Player = e.player
         info(p.name + "ログアウト")
 
     }
@@ -100,9 +97,9 @@ class Main : JavaPlugin() ,Listener {
     //      銃や弓などのダメージイベント
     @EventHandler
     fun onEntityDamage(e: EntityDamageByEntityEvent) {
-        if (e.getDamager() is Projectile && e.getEntity() is Player) {
+        if (e.damager is Projectile && e.entity is Player) {
             //make sure the damager is a snowball & the damaged entity is a Player
-            val shooter: ProjectileSource = (e.getDamager() as Projectile).getShooter() as? Player ?: return
+            val shooter: ProjectileSource = (e.damager as Projectile).shooter as? Player ?: return
             val p = shooter as Player
 
         }
