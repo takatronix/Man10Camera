@@ -1,6 +1,8 @@
 package red.man10.camera
 
 import org.bukkit.Bukkit
+import org.bukkit.command.CommandSender
+import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import org.bukkit.util.io.BukkitObjectInputStream
@@ -10,8 +12,58 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 
+
+// オフラインのプレイヤーを返す
+fun getOfflinePlayer(sender: CommandSender, name:String?): Player?{
+    if(name == null){
+        error("名前が指定されていません",sender)
+        return null
+    }
+    val player = Bukkit.getOfflinePlayerIfCached(name)
+    if(player == null){
+        error("プレイヤーが存在しません",sender)
+        return null
+    }
+    return player.player
+}
+// オンラインのプレイヤーを返す
+fun getOnlinePlayer(sender: CommandSender, name:String?): Player?{
+    if(name == null){
+        error("名前が指定されていません",sender)
+        return null
+    }
+    val player = Bukkit.getPlayer(name)
+    if(player == null){
+        error("プレイヤーが見つかりません",sender)
+        return null
+    }
+    if(!player.isOnline){
+        error("プレイヤーがオンラインではありません",sender)
+        return null
+    }
+    return player
+}
+fun toRadian(angle: Double): Double {
+    return angle * Math.PI / 180f
+}
 class Utility {
-/*
+
+    // 角度->ラジアン
+
+    // ラジアン->角度
+    fun toAngle(radian: Double): Double {
+        return radian * 180 / Math.PI
+    }
+    /*
+    private fun getAngle(player: Player): Double {
+        var rotation = ((player.location.yaw - 90) % 360).toDouble()
+        if (rotation < 0) {
+            rotation += 360.0
+        }
+        return rotation
+    }
+*/
+    /*
     fun sendTitle(player: Player, text: String, fadeInTime: Int, showTime: Int, fadeOutTime: Int, color: net.md_5.bungee.api.ChatColor) {
         val chatTitle: IChatBaseComponent =
             ChatSerializer.a("{\"text\": \"" + text + "\",color:" + color.name().toLowerCase() + "}")

@@ -5,6 +5,7 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
+import org.bukkit.entity.Player
 import java.lang.Exception
 import java.util.*
 
@@ -39,21 +40,22 @@ object Command : CommandExecutor, TabCompleter {
 
 
     private fun follow(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).setMode(sender,CameraMode.FOLLOW)
-
+        getCamera(label).follow(sender, getPlayer(sender,args))
     }
     private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).setMode(sender,CameraMode.GOAROUND)
-    }
-    private fun stop(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).setMode(sender,CameraMode.STOP)
+        getCamera(label).rotate(sender, getPlayer(sender,args))
     }
     private fun spectator(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).setMode(sender,CameraMode.SPECTATOR)
+        getCamera(label).spectator(sender, getPlayer(sender,args))
+    }
+    private fun stop(label:String,sender: CommandSender,args: Array<out String>){
+        //getCamera(label).stop(sender)
+    }
+    fun getPlayer(sender: CommandSender,args: Array<out String>): Player?{
+        return getOfflinePlayer(sender,args[2])
     }
 
-
-    // set [key] [value]
+    // set [key] [value]　でカメラ設定を保存
     private fun set(label:String,sender: CommandSender,args: Array<out String>){
         info("args.size = ${args.size}")
         if(args.size != 3){
@@ -70,7 +72,7 @@ object Command : CommandExecutor, TabCompleter {
             "radius" -> setRadius(label,sender,name)
             "height" -> setHeight(label,sender,name)
             "nightvision" -> setNightVision(label,sender,name)
-
+            "broardcast" -> setBroardcast(label,sender,name)
         }
     }
     private fun setPosition(label:String,sender: CommandSender,value:String){
@@ -131,7 +133,6 @@ object Command : CommandExecutor, TabCompleter {
         }
         error("パラメータは2以上にしてください",sender)
     }
-
     private fun setHeight(label:String,sender: CommandSender,value:String){
         val text= value.split(",")
         if(text.size == 1){
@@ -146,47 +147,46 @@ object Command : CommandExecutor, TabCompleter {
         error("パラメータは、ひとつだけで",sender)
     }
     private fun setNightVision(label:String,sender: CommandSender,value:String){
-        val text= value.split(",")
-        if(text.size == 1){
-            try{
-                if(text[0] == "on")
-                    getCamera(label).setNightVision(sender,true)
-                else
-                    getCamera(label).setNightVision(sender,false)
-                return
-            }catch (ex:Exception){
-                error(ex.localizedMessage)
-            }
+        when(value){
+            "on" -> getCamera(label).setNightVision(sender,true)
+            else -> getCamera(label).setNightVision(sender,false)
         }
-        error("/mc1 set nightvision on/off",sender)
     }
-
-
+    private fun setBroardcast(label:String,sender: CommandSender,value:String){
+        when(value){
+            "on" -> getCamera(label).setBoradcast(sender,true)
+            else -> getCamera(label).setBoradcast(sender,false)
+        }
+    }
 
     private fun showHelp(label:String,sender: CommandSender){
         sender.sendMessage("§b====================[Man10 Camera System]====================")
         sender.sendMessage("§amc1/mc2/mc3/mc4 カメラ1/カメラ2/カメラ3/カメラ4を制御")
         sender.sendMessage("§b[動作モード制御]")
-        sender.sendMessage("§a/$label follow     プレイヤーを追跡する")
-        sender.sendMessage("§a/$label rotate     プレイヤーの周りをまわる")
-        sender.sendMessage("§a/$label spectator  対象の視点を見る(スペクテーター専用)")
-        sender.sendMessage("§a/$label stop       停止")
+        sender.sendMessage("§a/$label follow (player)    プレイヤーを追跡する")
+        sender.sendMessage("§a/$label rotate (player)    プレイヤーの周りをまわる")
+        sender.sendMessage("§a/$label spectator (player) 対象の視点を見る(スペクテーター専用)")
+        sender.sendMessage("§a/$label stop               停止")
 
         sender.sendMessage("§b[表示モード制御]")
         sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
         sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")
         sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
 
-        sender.sendMessage("§b[設定コマンド]")
+        sender.sendMessage("§b[設定コマンド]設定は保存されます")
         sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
         sender.sendMessage("§a/$label set camera [player]       カメラプレイヤーを設定する")
         sender.sendMessage("§a/$label set position [x,y,z]      監視対象に対する相対位置を指定")
         sender.sendMessage("§a/$label set radius [r]            プレイヤーの周りを回る半径を指定")
         sender.sendMessage("§a/$label set height [h]            カメラの高さを指定")
         sender.sendMessage("§a/$label set nightvision [on/off]  ナイトビジョン")
+        sender.sendMessage("§a/$label set broadcast [on/off]    ")
+
+        sender.sendMessage("§b[宣伝系]")
+        sender.sendMessage("§a/$label youtube      　　　Youtubeチャンネルの紹介")
 
         sender.sendMessage("§b[開発中]")
-        sender.sendMessage("§a/$label teleport [x,y,z]              特定の座標にカメラを移動する")
+        sender.sendMessage("§a/$label teleport [x,y,z] or(player)    特定の座標にカメラを移動する")
         sender.sendMessage("§a/$label look     [x,y,z]or[Player] 　　特定の座標を見る")
 
         sender.sendMessage("[§bカメラファイル]")

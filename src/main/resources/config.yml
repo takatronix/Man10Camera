@@ -1,6 +1,7 @@
 mc1:
   camera: camera1
   location: location1
+  boardcast: https://www.youtube.com/@man10server でライブ配信中！
 mc2:
   camera: camera2
   location: location2

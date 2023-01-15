@@ -16,6 +16,7 @@ import java.io.IOException
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityPickupItemEvent
+import org.bukkit.event.entity.PlayerDeathEvent
 
 class Main : JavaPlugin() ,Listener {
     companion object {
@@ -61,6 +62,19 @@ class Main : JavaPlugin() ,Listener {
                 e.isCancelled = true
         }
     }
+
+    @EventHandler
+    fun onPlayerDeath(e: PlayerDeathEvent){
+        val entity=e.entity
+        if(false)
+            return
+        //  カメラはアイテムを拾わない
+        for(no in 1..cameraCount) {
+            if(entity.uniqueId == getCamera(no).uniqueId)
+                e.isCancelled = true
+        }
+    }
+
 
 }
 fun getCamera(label:String="mc1"):CameraThread{
