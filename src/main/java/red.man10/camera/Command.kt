@@ -27,7 +27,7 @@ object Command : CommandExecutor, TabCompleter {
 
         when(args[0]){
             "help" -> showHelp(label,sender)
-            "youtube" -> youtube(label,sender)
+            "live" -> youtube(label,sender)
             "set" -> set(label,sender,args)
             "follow" -> follow(label,sender,args)
             "rotate" -> rotate(label,sender,args)
@@ -202,7 +202,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label set message [on/off]      個人通知メッセージ")
 
         sender.sendMessage("§b[宣伝系]")
-        sender.sendMessage("§a/$label youtube      　　　Youtubeチャンネルの紹介")
+        sender.sendMessage("§a/$label live      　　　ライブ配信の告知")
 
         sender.sendMessage("§b[開発中]")
         sender.sendMessage("§a/$label teleport [x,y,z] or(player)    特定の座標にカメラを移動する")
@@ -234,7 +234,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","youtube")
+            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live")
         }
 
         when(args?.get(0)){

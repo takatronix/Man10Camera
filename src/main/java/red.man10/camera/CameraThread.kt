@@ -22,6 +22,7 @@ enum class CameraMode{
     FOLLOW,                     // 追跡
     ROTATE,                     // 周囲を回る
 }
+// カメラの表示モード
 enum class VisibleMode {
     HIDE,                       // 非表示(スペクテーター)
     SHOW,                       // 透明で頭だけ
@@ -31,26 +32,24 @@ enum class VisibleMode {
 class CameraThread : Thread() {
     var cameraName = ""                 // カメラ名
     var running = true                  // スレッド終了フラグ
-    private var wait:Long = 1000 /30   // 更新サイクル
-    private var target: Player? = null
-    private var camera: Player? = null
+    private var wait:Long = 1000 /60    // 更新サイクル
+    private var target: Player? = null  // 監視対象
+    private var camera: Player? = null  //　カメラプレーヤ
     //region 設定
-    private var radius:Double = 10.0
-    var angleStep = 0.12            // 回転速度
-    var angle = 0.0
-    var nightVision = false
-    var broadcast = true
-    var notification = true
+    private var radius:Double = 10.0        // 回転半径
+    private var angleStep = 0.08            // 回転速度
+    private var angle = 0.0                 //
+    private var nightVision = false         //
+    private var broadcast = true            // カメラ配信がはじまったのを全体に通知するか
+    private var notification = true         // 個人に通知するか
+    private var relativePos:Vector= Vector(2.0,2.0,0.0)    // カメラの相対位置
+    private var cameraMode:CameraMode = CameraMode.AUTO    // 動作モード
+    private var visibleMode:VisibleMode = VisibleMode.SHOW  // 表示モード
 
-    // カメラの相対位置
-    var relativePos:Vector= Vector(2.0,2.0,0.0)
-    // カメラモード
-    private var cameraMode:CameraMode = CameraMode.AUTO
-    private var visibleMode:VisibleMode = VisibleMode.SHOW
-
+    //region プロパティ
+    // カメラのUUID
     val uniqueId:UUID?
         get(){ return camera?.uniqueId }
-    //region プロパティ
     // カメラの座標
     val cameraPos:Vector?
         get(){ return camera?.location?.toVector() }
@@ -125,11 +124,13 @@ class CameraThread : Thread() {
         Bukkit.getOnlinePlayers().forEach {
             p ->
             run {
+                if(target == null)
+                    return
                 if(broadcast)
-                    p.sendMessage("§a§l"+target?.name+Main.notifyMessage)
+                    p.sendMessage("§a§l"+ target.name +Main.notifyMessage)
                 else{
                     if(notification && target == p)
-                        p.sendMessage("§a§l"+target?.name+Main.notifyMessage)
+                        p.sendMessage("§a§l"+ target.name +Main.notifyMessage)
                 }
             }
         }
@@ -176,7 +177,6 @@ class CameraThread : Thread() {
     public fun stop(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.STOP)
         info("${cameraName}を停止させました",sender)
-        notifyUsers(sender,player)
     }
     //endregion
 

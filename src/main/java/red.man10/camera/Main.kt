@@ -3,20 +3,17 @@ package red.man10.camera
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
+import org.bukkit.entity.Projectile
 import org.bukkit.event.EventHandler
-import org.bukkit.inventory.Inventory
-import org.bukkit.inventory.ItemStack
-import org.bukkit.plugin.java.JavaPlugin
-import org.bukkit.util.io.BukkitObjectInputStream
-import org.bukkit.util.io.BukkitObjectOutputStream
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.IOException
 import org.bukkit.event.Listener
-import org.bukkit.event.block.Action
+import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.player.*
+import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.projectiles.ProjectileSource
+
 
 class Main : JavaPlugin() ,Listener {
     companion object {
@@ -30,6 +27,8 @@ class Main : JavaPlugin() ,Listener {
         var mc2= CameraThread()
         var mc3= CameraThread()
         var mc4= CameraThread()
+
+
     }
 
     override fun onEnable() {
@@ -53,6 +52,7 @@ class Main : JavaPlugin() ,Listener {
         for(no in 1..4) {
             getCamera(no).running = false
         }
+
     }
     @EventHandler
     fun onPickUp(e: EntityPickupItemEvent){
@@ -75,6 +75,47 @@ class Main : JavaPlugin() ,Listener {
             }
         }
     }
+    @EventHandler
+    fun onPlayerMove(e: PlayerMoveEvent){
+    }
+    @EventHandler
+    fun onPlayerJoin(e: PlayerJoinEvent){
+    }
+    @EventHandler
+    fun onBlockBreak(e:BlockBreakEvent){
+    }
+
+    @EventHandler
+    fun onPlayerQuit(e: PlayerQuitEvent) {
+        val p: Player = e.getPlayer()
+        info(p.name + "ログアウト")
+
+    }
+
+
+    @EventHandler
+    fun onPlayerRespawn(e: PlayerRespawnEvent) {
+    }
+
+    //      銃や弓などのダメージイベント
+    @EventHandler
+    fun onEntityDamage(e: EntityDamageByEntityEvent) {
+        if (e.getDamager() is Projectile && e.getEntity() is Player) {
+            //make sure the damager is a snowball & the damaged entity is a Player
+            val shooter: ProjectileSource = (e.getDamager() as Projectile).getShooter() as? Player ?: return
+            val p = shooter as Player
+
+        }
+    }
+
+    //      ヒットダメージ等
+    @EventHandler
+    fun PlayerDamageReceive(e: EntityDamageByEntityEvent) {
+        if (e.entity is Player) {
+            val damagedPlayer = e.entity as Player
+        }
+    }
+
 
 }
 fun getCamera(label:String="mc1"):CameraThread{
