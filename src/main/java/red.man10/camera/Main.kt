@@ -17,6 +17,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 
+
 class Main : JavaPlugin() ,Listener {
     companion object {
         val broadcastMessage = "§c§lYoutubeライブ配信中!! §f§l->  §f§l§nhttps://www.youtube.com/@man10server/live"
@@ -71,6 +72,7 @@ class Main : JavaPlugin() ,Listener {
         plugin.server.pluginManager.registerEvents(this, plugin)
         info("Man10 Camera Plugin Enabled")
     }
+
 
     // 除外プレイヤーか(OPとカメラは監視からのぞく)
     fun isExclusionPlayer(uuid:UUID):Boolean{

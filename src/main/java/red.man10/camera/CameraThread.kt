@@ -138,7 +138,10 @@ class CameraThread : Thread() {
 
         return false
     }
-
+    private fun resetAllPostionEffects(player:Player){
+        for (effect in player.activePotionEffects)
+            player.removePotionEffect(effect.type)
+    }
     // カメラモード設定
     private fun setMode(sender: CommandSender?,mode:CameraMode){
         cameraMode = mode
@@ -149,6 +152,7 @@ class CameraThread : Thread() {
         camera?.spectatorTarget  = null
         save(sender)
 
+        resetAllPostionEffects(cameraPlayer!!)
         // スペクテーターモードの時はボディの表示は必要ない
         if(mode == CameraMode.SPECTATOR){
             return
@@ -159,6 +163,7 @@ class CameraThread : Thread() {
             VisibleMode.SHOW -> show(sender)
             else -> VisibleMode.HIDE
         }
+        setNightVision(sender,nightVision)
     }
 
     // 鯖にいるユーザーに通知する
