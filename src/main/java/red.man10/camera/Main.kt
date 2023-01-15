@@ -46,10 +46,31 @@ class Main : JavaPlugin() ,Listener {
 
     override fun onDisable() {
         info("Disabling Man10 Camera Plugin")
-        for(no in 1..4) {
+        for(no in 1..cameraCount) {
             getCamera(no).running = false
         }
 
+    }
+
+    private fun isCamera(player:Player?):Boolean{
+        if(player == null)
+            return false
+        for(no in 1..cameraCount) {
+            if(getCamera(no).uniqueId == player.uniqueId){
+                return true
+            }
+        }
+        return false
+    }
+    private fun isTarget(player:Player?):Boolean{
+        if(player == null)
+            return false
+        for(no in 1..cameraCount) {
+            if(getCamera(no).targetUniqueId == player.uniqueId){
+                return true
+            }
+        }
+        return false
     }
     @EventHandler
     fun onPickUp(e: EntityPickupItemEvent){
@@ -77,6 +98,13 @@ class Main : JavaPlugin() ,Listener {
     }
     @EventHandler
     fun onPlayerJoin(e: PlayerJoinEvent){
+        if(isCamera(e.player)){
+
+        }
+        if(isTarget(e.player)){
+            Bukkit.getOnlinePlayers().forEach { player: Player? -> player?.sendMessage("targetがログイン")  }
+        }
+
     }
     @EventHandler
     fun onBlockBreak(e:BlockBreakEvent){

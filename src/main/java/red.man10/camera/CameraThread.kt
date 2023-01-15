@@ -31,8 +31,8 @@ class CameraThread : Thread() {
     var cameraName = ""                     // カメラ名
     var running = true                      // スレッド終了フラグ
     private var wait:Long = 1000 /60        // 更新サイクル
-    private var target: Player? = null      // 監視対象
-    private var camera: Player? = null      //　カメラプレーヤ
+    private var target: UUID? = null        // 監視対象
+    private var camera: UUID? = null        //　カメラプレーヤ
     //region 設定
     private var radius:Double = 10.0        // 回転半径
     private var angleStep = 0.08            // 回転速度
@@ -48,24 +48,30 @@ class CameraThread : Thread() {
     //endregion
 
     //region プロパティ
+    private val cameraPlayer:Player?
+        get() { return Bukkit.getPlayer(camera!!)}
+    private val targetPlayer:Player?
+        get() { return Bukkit.getPlayer(target!!)}
     // カメラのUUID
     val uniqueId:UUID?
-        get(){ return camera?.uniqueId }
+        get(){ return camera}
+    val targetUniqueId:UUID?
+        get(){ return target }
     // カメラの座標
     val cameraPos:Vector?
-        get(){ return camera?.location?.toVector() }
+        get(){ return cameraPlayer?.location?.toVector() }
     // カメラの向き
     val cameraDir:Vector?
-        get() { return camera?.location?.direction }
+        get() { return cameraPlayer?.location?.direction }
     // ターゲットの座標
     private val targetPos:Vector?
-        get() { return target?.location?.toVector() }
+        get() { return targetPlayer?.location?.toVector() }
     // ターゲットの向き
     val targetDir:Vector?
-        get(){ return target?.location?.direction }
+        get(){ return targetPlayer?.location?.direction }
     // ターゲット-カメラ間距離
     val targetDistance:Double?
-        get(){ return target?.location?.distance(camera?.location!!) }
+        get(){ return targetPlayer?.location?.distance(cameraPlayer?.location!!) }
     // カメラ->ターゲットのベクトル
     private val toTargetVec:Vector?
         get(){ return targetPos?.subtract(cameraPos!!) }
@@ -78,6 +84,7 @@ class CameraThread : Thread() {
             sleep(wait)
             if(!canWork())
                 continue
+
             when(cameraMode){
                 CameraMode.AUTO -> onAutoMode()
                 CameraMode.SPECTATOR -> onSpectatorMode()
@@ -95,11 +102,11 @@ class CameraThread : Thread() {
         when(cameraMode){
             // Lookモードは対象がなくてもOK
             CameraMode.LOOK -> {
-                if(camera?.isOnline == true)
+                if(cameraPlayer?.isOnline == true)
                     return true
             }
             else -> {
-                if(camera?.isOnline == true && target?.isOnline == true)
+                if(cameraPlayer?.isOnline == true && targetPlayer?.isOnline == true)
                     return true
             }
         }
@@ -109,6 +116,7 @@ class CameraThread : Thread() {
     private fun setMode(sender: CommandSender,mode:CameraMode){
         cameraMode = mode
         // クリエイティブとスペクテーターを切り替えてスペクテーターターゲットを外す
+        val camera = cameraPlayer
         camera?.gameMode = GameMode.CREATIVE
         camera?.gameMode = GameMode.SPECTATOR
         camera?.spectatorTarget  = null
@@ -143,7 +151,7 @@ class CameraThread : Thread() {
     fun follow(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.FOLLOW)
         if(player?.isOnline == true){
-            target = player
+            target = player.uniqueId
         }
         info("${cameraName}をフォローモードに設定",sender)
         notifyUsers(sender,player)
@@ -152,7 +160,7 @@ class CameraThread : Thread() {
         setMode(sender,CameraMode.SPECTATOR)
         save(sender)
         if(player?.isOnline == true){
-            camera?.spectatorTarget = player
+            cameraPlayer?.spectatorTarget = player
         }
         info("${cameraName}をスペクテーターモードで監視",sender)
         notifyUsers(sender,player)
@@ -161,7 +169,7 @@ class CameraThread : Thread() {
     fun rotate(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.ROTATE)
         if(player?.isOnline == true){
-            target = player
+            target = player.uniqueId
         }
         info("${cameraName}を回転モードに設定",sender)
         notifyUsers(sender,player)
@@ -170,7 +178,7 @@ class CameraThread : Thread() {
     fun look(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.ROTATE)
         if(player?.isOnline == true){
-            target = player
+            target = player.uniqueId
         }
         info("${cameraName}をルックモードに設定",sender)
         notifyUsers(sender,player)
@@ -205,7 +213,7 @@ class CameraThread : Thread() {
     // カメラプレイヤーの設定
     fun setCamera(sender: CommandSender, name:String?):Boolean {
         val player = getOfflinePlayer(sender,name) ?: return false
-        camera = player.player
+        camera = player.player?.uniqueId
         info("${cameraName}: ${player.name}をカメラに設定しました",sender)
         save(sender)
         return true
@@ -214,7 +222,7 @@ class CameraThread : Thread() {
     // 監視対象の設定
     fun setTarget(sender: CommandSender, name:String?):Boolean {
         val player = getOfflinePlayer(sender,name) ?: return false
-        target = player.player
+        target = player.player?.uniqueId
         info("${cameraName}${player.name}をターゲットに設定しました",sender)
         save(sender)
         return true
@@ -231,7 +239,7 @@ class CameraThread : Thread() {
     }
     private fun onFollowMode(){
         // ターゲットの相対位置のカメラ位置
-        val loc = target?.location?.add(relativePos)
+        val loc = targetPlayer?.location?.add(relativePos)
         val pos = loc?.toVector()
         val dir = targetPos?.subtract(pos!!)
         loc?.direction = dir!!
@@ -244,18 +252,21 @@ class CameraThread : Thread() {
 
     //region 表示モード
     fun hide(sender:CommandSender) {
+        val camera = cameraPlayer
         camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 1, true))
         camera?.gameMode = GameMode.SPECTATOR
         visibleMode = VisibleMode.HIDE
         save(sender)
     }
     fun show(sender:CommandSender){
+        val camera = cameraPlayer
         camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
         camera?.gameMode = GameMode.CREATIVE
         visibleMode = VisibleMode.SHOW
         save(sender)
     }
     fun showBody(sender:CommandSender){
+        val camera = cameraPlayer
         camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
         camera?.gameMode = GameMode.CREATIVE
         visibleMode = VisibleMode.SHOWBODY
@@ -264,6 +275,7 @@ class CameraThread : Thread() {
     //endregion
 
     fun setNightVision(sender:CommandSender,flag:Boolean){
+        val camera = cameraPlayer
         if(flag)
             camera?.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,1,true))
         else
@@ -284,7 +296,7 @@ class CameraThread : Thread() {
     }
     private fun onRotateMode(){
         // ターゲットの相対位置のカメラ位置
-        val loc = target?.location?.add(relativePos)
+        val loc = targetPlayer?.location?.add(relativePos)
         angle += angleStep
         if(angle > 360)
             angle = 0.0
@@ -301,15 +313,17 @@ class CameraThread : Thread() {
         if(pos == null)
             return
         // カメラ->ターゲットのベクトルを設定する
-        val loc = camera?.location
+        val loc = cameraPlayer?.location
         loc?.direction = toTargetVec!!
         teleport(loc)
     }
     // テレポートする
     private fun teleport(loc:Location?){
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
-            if(loc != null && camera != null && camera?.isOnline == true)
-                camera?.teleport(loc)
+            val camera = cameraPlayer
+            if(loc != null && camera != null && camera.isOnline){
+                camera.teleport(loc)
+            }
         })
     }
     //region ファイル管理
@@ -318,11 +332,11 @@ class CameraThread : Thread() {
         info("saving ${file.absolutePath}")
         try{
             val config = YamlConfiguration.loadConfiguration(file)
-            config["target"] = target?.uniqueId.toString()
-            config["camera"] = camera?.uniqueId.toString()
+            config["target"] = target?.toString()
+            config["camera"] = camera?.toString()
             config["cameraMode"] = cameraMode.toString()
             config["visibleMode"] = visibleMode.toString()
-            config["gameMode"] = camera?.gameMode.toString()
+            config["gameMode"] = cameraPlayer?.gameMode.toString()
             config["radius"] = radius
             config["nightVision"] = nightVision
             config["broadcast"] = broadcast
@@ -346,11 +360,11 @@ class CameraThread : Thread() {
             // target UUID
             var s = config.getString("target")
             if(s != null)
-                target = Bukkit.getPlayer(UUID.fromString(s))
+                target = UUID.fromString(s)
             // camera UUID
             s = config.getString("camera")
             if(s != null)
-                camera = Bukkit.getPlayer(UUID.fromString(s))
+                camera = UUID.fromString(s)
 
             cameraMode = enumValueOf(config["cameraMode"].toString())
             visibleMode = enumValueOf(config["visibleMode"].toString())
@@ -365,7 +379,7 @@ class CameraThread : Thread() {
                 radius = 1.0
 
             val gameMode = enumValueOf<GameMode>(config["gameMode"].toString())
-            camera?.gameMode = gameMode
+            cameraPlayer?.gameMode = gameMode
         }
         catch (e:Exception){
             error("カメラ設定の読み込みに失敗しました:${cameraName} / ${e.localizedMessage}",sender)
