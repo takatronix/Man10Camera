@@ -62,19 +62,16 @@ class Main : JavaPlugin() ,Listener {
                 e.isCancelled = true
         }
     }
-
     @EventHandler
     fun onPlayerDeath(e: PlayerDeathEvent){
         val entity=e.entity
-        if(false)
-            return
-        //  カメラはアイテムを拾わない
         for(no in 1..cameraCount) {
-            if(entity.uniqueId == getCamera(no).uniqueId)
+            if(entity.uniqueId == getCamera(no).uniqueId){
                 e.isCancelled = true
+                entity.sendMessage("カメラプレイヤーにされているため死亡をキャンセルしました")
+            }
         }
     }
-
 
 }
 fun getCamera(label:String="mc1"):CameraThread{

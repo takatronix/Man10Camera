@@ -119,6 +119,7 @@ class CameraThread : Thread() {
         if(player?.isOnline == true){
             target = player
         }
+        info("${cameraName}をフォローモードに設定",sender)
     }
     public fun spectator(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.SPECTATOR)
@@ -126,27 +127,28 @@ class CameraThread : Thread() {
         if(player?.isOnline == true){
             camera?.spectatorTarget = player
         }
+        info("${cameraName}をスペクテーターモードで監視",sender)
     }
     // 特定プレイヤーを回転しながら追跡
     public fun rotate(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.ROTATE)
-        save(sender)
         if(player?.isOnline == true){
             target = player
         }
+        info("${cameraName}を回転モードに設定",sender)
     }
     // カメラを固定でプレイヤーを注視
     public fun look(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.ROTATE)
-        save(sender)
         if(player?.isOnline == true){
             target = player
         }
+        info("${cameraName}をルックモードに設定",sender)
     }
     // カメラ停止
     public fun stop(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.STOP)
-        save(sender)
+        info("${cameraName}を停止させました",sender)
     }
     //endregion
 

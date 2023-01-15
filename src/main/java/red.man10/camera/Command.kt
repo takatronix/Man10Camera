@@ -40,19 +40,25 @@ object Command : CommandExecutor, TabCompleter {
 
 
     private fun follow(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).follow(sender, getPlayer(sender,args))
+        getCamera(label).follow(sender, onlinePlayer(sender,args))
     }
     private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).rotate(sender, getPlayer(sender,args))
+        getCamera(label).rotate(sender, onlinePlayer(sender,args))
     }
     private fun spectator(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).spectator(sender, getPlayer(sender,args))
+        getCamera(label).spectator(sender, onlinePlayer(sender,args))
     }
     private fun stop(label:String,sender: CommandSender,args: Array<out String>){
-        //getCamera(label).stop(sender)
+        getCamera(label).stop(sender, onlinePlayer(sender,args))
     }
-    fun getPlayer(sender: CommandSender,args: Array<out String>): Player?{
-        return getOfflinePlayer(sender,args[2])
+    private fun onlinePlayer(sender: CommandSender, args: Array<out String>): Player?{
+        if(args.size < 2)
+            return null
+        val player = getOnlinePlayer(sender,args[1])
+        if(player != null){
+            sender.sendMessage("${player.name}の追跡を開始")
+        }
+        return player
     }
 
     // set [key] [value]　でカメラ設定を保存
