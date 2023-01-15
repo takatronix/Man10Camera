@@ -1,5 +1,4 @@
 package red.man10.camera
-
 import org.bukkit.*
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.YamlConfiguration
@@ -11,7 +10,6 @@ import java.io.File
 import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
-
 
 // カメラの動作モード
 enum class CameraMode{
@@ -123,7 +121,7 @@ class CameraThread : Thread() {
         save(sender)
     }
 
-    fun notifyUsers(sender: CommandSender,target:Player?){
+    private fun notifyUsers(sender: CommandSender, target:Player?){
         Bukkit.getOnlinePlayers().forEach {
             p ->
             run {
@@ -141,7 +139,7 @@ class CameraThread : Thread() {
 
     //region 基本コマンド
     // 特定プレイヤーを追跡
-    public fun follow(sender: CommandSender,player:Player? = null){
+    fun follow(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.FOLLOW)
         if(player?.isOnline == true){
             target = player
@@ -149,7 +147,7 @@ class CameraThread : Thread() {
         info("${cameraName}をフォローモードに設定",sender)
         notifyUsers(sender,player)
     }
-    public fun spectator(sender: CommandSender,player:Player? = null){
+    fun spectator(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.SPECTATOR)
         save(sender)
         if(player?.isOnline == true){
@@ -159,7 +157,7 @@ class CameraThread : Thread() {
         notifyUsers(sender,player)
     }
     // 特定プレイヤーを回転しながら追跡
-    public fun rotate(sender: CommandSender,player:Player? = null){
+    fun rotate(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.ROTATE)
         if(player?.isOnline == true){
             target = player
@@ -168,7 +166,7 @@ class CameraThread : Thread() {
         notifyUsers(sender,player)
     }
     // カメラを固定でプレイヤーを注視
-    public fun look(sender: CommandSender,player:Player? = null){
+    fun look(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.ROTATE)
         if(player?.isOnline == true){
             target = player
@@ -177,16 +175,19 @@ class CameraThread : Thread() {
         notifyUsers(sender,player)
     }
     // カメラ停止
-    public fun stop(sender: CommandSender,player:Player? = null){
+    fun stop(sender: CommandSender,player:Player? = null){
         setMode(sender,CameraMode.STOP)
         info("${cameraName}を停止させました",sender)
     }
     //endregion
 
+    // カメラの相対位置の設定
     fun setRelativePosition(sender: CommandSender,x:Double,y:Double,z:Double){
         relativePos = Vector(x,y,z)
         save(sender)
     }
+
+    // 半径の設定
     fun setRadius(sender: CommandSender,r:Double){
         radius = r
         if(radius < 1.0)
@@ -195,6 +196,7 @@ class CameraThread : Thread() {
         save(sender)
     }
 
+    // 高さの設定
     fun setHeight(sender: CommandSender,h:Double){
         relativePos.y = h
         save(sender)
@@ -217,20 +219,20 @@ class CameraThread : Thread() {
         return true
     }
 
-    fun onAutoMode(){
+    private fun onAutoMode(){
     }
-    fun onStopMode(){
+    private fun onStopMode(){
     }
-    fun onSpectatorMode(){
+    private fun onSpectatorMode(){
     }
     fun onLookMode(){
         lookAt(targetPos)
     }
-    fun onFollowMode(){
+    private fun onFollowMode(){
         // ターゲットの相対位置のカメラ位置
-        var loc = target?.location?.add(relativePos)
-        var pos = loc?.toVector()
-        var dir = targetPos?.subtract(pos!!)
+        val loc = target?.location?.add(relativePos)
+        val pos = loc?.toVector()
+        val dir = targetPos?.subtract(pos!!)
         loc?.direction = dir!!
         // TODO:カメラがブロックとかぶっていたら、距離を近づける
         if(loc?.block?.type == Material.AIR){
@@ -293,7 +295,6 @@ class CameraThread : Thread() {
         loc?.direction = dir!!
         teleport(loc)
     }
-
     // ポジションカメラをむける
     private fun lookAt(pos:Vector?){
         if(pos == null)
@@ -310,7 +311,6 @@ class CameraThread : Thread() {
                 camera?.teleport(loc)
         })
     }
-
     //region ファイル管理
     private fun save(sender:CommandSender?=null): Boolean {
         val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraName.yml")

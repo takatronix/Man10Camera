@@ -11,8 +11,6 @@ import java.util.*
 
 
 object Command : CommandExecutor, TabCompleter {
-
-
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
 
         if(!sender.hasPermission("red.man10.camera.op")){
@@ -33,17 +31,15 @@ object Command : CommandExecutor, TabCompleter {
             "rotate" -> rotate(label,sender,args)
             "stop" -> stop(label,sender,args)
             "spectator" -> spectator(label,sender,args)
-         //   "look" -> look(sender,args)
+            //"look" -> look(label,sender,args)
          //   "teleport" -> teleport(sender,args)
             "show" -> getCamera(label).show(sender)
             "showbody" -> getCamera(label).showBody(sender)
             "hide" -> getCamera(label).hide(sender)
         }
 
-
         return false
     }
-
 
     private fun follow(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).follow(sender, onlinePlayer(sender,args))
