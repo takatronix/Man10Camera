@@ -67,7 +67,7 @@ class CameraThread : Thread() {
     val targetDistance:Double?
         get(){ return target?.location?.distance(camera?.location!!) }
     // カメラ->ターゲットのベクトル
-    val toTargetVec:Vector?
+    private val toTargetVec:Vector?
         get(){ return targetPos?.subtract(cameraPos!!) }
     //endregion
 
@@ -121,6 +121,7 @@ class CameraThread : Thread() {
         save(sender)
     }
 
+    // 鯖にいるユーザーに通知する
     private fun notifyUsers(sender: CommandSender, target:Player?){
         Bukkit.getOnlinePlayers().forEach {
             p ->
