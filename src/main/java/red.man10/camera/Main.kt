@@ -13,6 +13,13 @@ import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 
 class Main : JavaPlugin() ,Listener {
@@ -26,8 +33,13 @@ class Main : JavaPlugin() ,Listener {
         var mc2= CameraThread()
         var mc3= CameraThread()
         var mc4= CameraThread()
+        // プレイヤーの統計データ
+        var playerData = ConcurrentHashMap<UUID, PlayerData>()
     }
 
+    fun test(){
+        var list = playerData.toList()
+    }
     override fun onEnable() {
         plugin = this
         saveDefaultConfig()
@@ -40,6 +52,8 @@ class Main : JavaPlugin() ,Listener {
             camera.load()
             camera.start()
         }
+        // リロード後のユーザーはjoinイベントがないためデータを作る必要がある
+        Bukkit.getOnlinePlayers().forEach { player ->  playerData.putIfAbsent(player.uniqueId,PlayerData())}
         plugin.server.pluginManager.registerEvents(this, plugin)
         info("Man10 Camera Plugin Enabled")
     }
@@ -49,7 +63,6 @@ class Main : JavaPlugin() ,Listener {
         for(no in 1..cameraCount) {
             getCamera(no).running = false
         }
-
     }
 
     private fun isCamera(player:Player?):Boolean{
@@ -95,31 +108,28 @@ class Main : JavaPlugin() ,Listener {
     }
     @EventHandler
     fun onPlayerMove(e: PlayerMoveEvent){
-    }
-    @EventHandler
-    fun onPlayerJoin(e: PlayerJoinEvent){
-        if(isCamera(e.player)){
-
-        }
-        if(isTarget(e.player)){
-            Bukkit.getOnlinePlayers().forEach { player: Player? -> player?.sendMessage("targetがログイン")  }
-        }
+        val uuid = e.player.uniqueId
+        playerData[uuid]?.playerMoveCount = playerData[uuid]?.playerMoveCount!! + 1
+        playerData[uuid]?.updateTime = System.currentTimeMillis()
 
     }
     @EventHandler
     fun onBlockBreak(e:BlockBreakEvent){
+        val uuid = e.player.uniqueId
+        playerData[uuid]?.blockBreakCount = playerData[uuid]?.blockBreakCount!! + 1
+        playerData[uuid]?.updateTime = System.currentTimeMillis()
+    }
+
+    @EventHandler
+    fun onPlayerJoin(e: PlayerJoinEvent){
+        val uuid = e.player.uniqueId
+        playerData.putIfAbsent(uuid,PlayerData())
     }
 
     @EventHandler
     fun onPlayerQuit(e: PlayerQuitEvent) {
-        val p: Player = e.player
-        info(p.name + "ログアウト")
-
-    }
-
-
-    @EventHandler
-    fun onPlayerRespawn(e: PlayerRespawnEvent) {
+        // ログアウトしたユーザーのデータは消去
+        playerData.remove(e.player.uniqueId)
     }
 
     //      銃や弓などのダメージイベント

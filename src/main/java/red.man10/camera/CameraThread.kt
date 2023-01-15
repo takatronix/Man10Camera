@@ -32,7 +32,8 @@ class CameraThread : Thread() {
     var running = true                      // スレッド終了フラグ
     private var wait:Long = 1000 /60        // 更新サイクル
     private var target: UUID? = null        // 監視対象
-    private var camera: UUID? = null        //　カメラプレーヤ
+    private var camera: UUID? = null        // カメラプレーヤ
+
     //region 設定
     private var radius:Double = 10.0        // 回転半径
     private var angleStep = 0.08            // 回転速度
@@ -46,12 +47,17 @@ class CameraThread : Thread() {
     //region 内部変数
     private var angle:Double = 0.0                   // 現在のカメラの回転角度(0-360)
     //endregion
-
     //region プロパティ
     private val cameraPlayer:Player?
-        get() { return Bukkit.getPlayer(camera!!)}
+        get() {
+            if(camera == null)
+                return null
+            return Bukkit.getPlayer(camera!!)}
     private val targetPlayer:Player?
-        get() { return Bukkit.getPlayer(target!!)}
+        get() {
+            if(target == null)
+                return null
+            return Bukkit.getPlayer(target!!)}
     // カメラのUUID
     val uniqueId:UUID?
         get(){ return camera}
@@ -113,6 +119,7 @@ class CameraThread : Thread() {
         return false
     }
 
+    // カメラモード設定
     private fun setMode(sender: CommandSender,mode:CameraMode){
         cameraMode = mode
         // クリエイティブとスペクテーターを切り替えてスペクテーターターゲットを外す
@@ -120,13 +127,18 @@ class CameraThread : Thread() {
         camera?.gameMode = GameMode.CREATIVE
         camera?.gameMode = GameMode.SPECTATOR
         camera?.spectatorTarget  = null
+        save(sender)
 
+        // スペクテーターモードの時はボディの表示は必要ない
+        if(mode == CameraMode.SPECTATOR){
+            return
+        }
+        // 表示モードに基づいて表示を合わせる
         when(visibleMode){
             VisibleMode.SHOWBODY -> showBody(sender)
             VisibleMode.SHOW -> show(sender)
             else -> VisibleMode.HIDE
         }
-        save(sender)
     }
 
     // 鯖にいるユーザーに通知する
@@ -160,7 +172,7 @@ class CameraThread : Thread() {
         setMode(sender,CameraMode.SPECTATOR)
         save(sender)
         if(player?.isOnline == true){
-            cameraPlayer?.spectatorTarget = player
+            cameraPlayer?.spectatorTarget = targetPlayer
         }
         info("${cameraName}をスペクテーターモードで監視",sender)
         notifyUsers(sender,player)
