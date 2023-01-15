@@ -140,7 +140,7 @@ class CameraThread : Thread() {
     }
 
     // カメラモード設定
-    private fun setMode(sender: CommandSender,mode:CameraMode){
+    private fun setMode(sender: CommandSender?,mode:CameraMode){
         cameraMode = mode
         // クリエイティブとスペクテーターを切り替えてスペクテーターターゲットを外す
         val camera = cameraPlayer
@@ -162,7 +162,7 @@ class CameraThread : Thread() {
     }
 
     // 鯖にいるユーザーに通知する
-    private fun notifyUsers(message:String,sender: CommandSender, target:Player?){
+    private fun notifyUsers(message:String,sender: CommandSender?, target:Player?){
         Bukkit.getOnlinePlayers().forEach {
             p ->
             run {
@@ -188,7 +188,7 @@ class CameraThread : Thread() {
         info("${cameraLabel}をフォローモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
     }
-    fun spectator(sender: CommandSender,player:Player? = null){
+    fun spectator(sender: CommandSender?, player:Player? = null){
         setMode(sender,CameraMode.SPECTATOR)
         save(sender)
         if(player?.isOnline == true){
@@ -199,7 +199,7 @@ class CameraThread : Thread() {
         notifyUsers(Main.spectatoressage,sender,player)
     }
     // 特定プレイヤーを回転しながら追跡
-    fun rotate(sender: CommandSender,player:Player? = null){
+    fun rotate(sender: CommandSender?, player:Player? = null){
         setMode(sender,CameraMode.ROTATE)
         if(player?.isOnline == true){
             target = player.uniqueId
@@ -291,14 +291,14 @@ class CameraThread : Thread() {
         visibleMode = VisibleMode.HIDE
         save(sender)
     }
-    fun show(sender:CommandSender){
+    fun show(sender:CommandSender?){
         val camera = cameraPlayer
         camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
         camera?.gameMode = GameMode.CREATIVE
         visibleMode = VisibleMode.SHOW
         save(sender)
     }
-    fun showBody(sender:CommandSender){
+    fun showBody(sender:CommandSender?){
         val camera = cameraPlayer
         camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
         camera?.gameMode = GameMode.CREATIVE
@@ -307,7 +307,7 @@ class CameraThread : Thread() {
     }
     //endregion
 
-    fun setNightVision(sender:CommandSender,flag:Boolean){
+    fun setNightVision(sender:CommandSender?,flag:Boolean){
         val camera = cameraPlayer
         if(flag)
             camera?.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,1,true))
@@ -317,7 +317,7 @@ class CameraThread : Thread() {
         save(sender)
         info("ナイトビジョンを{$flag}にしました",sender)
     }
-    fun setBroadcast(sender:CommandSender,flag:Boolean){
+    fun setBroadcast(sender:CommandSender?,flag:Boolean){
         broadcast = flag
         save(sender)
         info("全体通知を{$flag}にしました",sender)

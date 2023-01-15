@@ -31,10 +31,11 @@ class Main : JavaPlugin() ,Listener {
         var mc3= CameraThread()
         var mc4= CameraThread()
         // プレイヤーの統計データ
-        var playerData = ConcurrentHashMap<UUID, PlayerData>()
+        var playerMap = ConcurrentHashMap<UUID, PlayerData>()
 
+        var autoTask = false
         var running = true                      // スレッド終了フラグ
-        var taskSleep = 5000L
+        var taskSleep = 60000L
     }
 
     override fun onEnable() {
@@ -55,13 +56,14 @@ class Main : JavaPlugin() ,Listener {
         mc4.cameraName = "[カメラ４]"
 
         // リロード後のユーザーはjoinイベントがないためデータを作る必要がある
-        Bukkit.getOnlinePlayers().forEach { player ->  playerData.putIfAbsent(player.uniqueId,PlayerData(player.uniqueId))}
+        Bukkit.getOnlinePlayers().forEach { player ->  playerMap.putIfAbsent(player.uniqueId,PlayerData())}
         // 自動処理スレッド
         thread {
             info("auto task thread started")
             while(running){
                 Thread.sleep(taskSleep)
-                autoCameraTask()
+                if(autoTask)
+                    autoCameraTask()
             }
             info("auto task thread ended")
         }
@@ -70,17 +72,49 @@ class Main : JavaPlugin() ,Listener {
         info("Man10 Camera Plugin Enabled")
     }
 
+    // 除外プレイヤーか(OPとカメラは監視からのぞく)
+    fun isExclusionPlayer(uuid:UUID):Boolean{
+        var player = Bukkit.getPlayer(uuid)
+        if(player?.isOnline == false)
+            return true
+        if(player?.isOp == true)
+            return true
+        if(isCamera(player))
+            return true
+        return false
+    }
     fun autoCameraTask(){
-        var list = playerData.toList()
-        info("-----------------")
-        list.forEach {data: Pair<UUID, PlayerData> ->
-            var data = data.second
-            var player = data.uuid?.let { Bukkit.getPlayer(it) }
-            if (player != null) {
-                info("${player.name}:${data.getSleepTime()} isActive:${data.isActive()}")
-            }
 
+        info("自動切換えタスク")
+        // アクティブなプレイヤー順にソート
+        var list = playerMap.toList().sortedByDescending { it.second.updateTime }
+        var activeList:MutableList<PlayerData>  = mutableListOf()
+        //  アクティブな放送対象の
+        activeList.clear()
+        list.forEach {data: Pair<UUID, PlayerData> ->
+            val uuid = data.first
+            val pd = data.second
+            pd.uuid = uuid
+
+            if(!isExclusionPlayer(uuid)){
+                // アクティブかつ、現在表示してない対象
+                if(pd.isActive() && !isTarget(Bukkit.getPlayer(uuid!!)))
+                   activeList.add(pd)
+            }
         }
+
+        if(activeList.size == 0){
+            info("切替対象なし")
+            return
+        }
+
+        // 次の表示対象
+        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            val player = Bukkit.getPlayer(activeList[0].uuid!!)
+            getCamera(1).rotate(null,player)
+            getCamera(2).spectator(null,player)
+        })
+
     }
 
     override fun onDisable() {
@@ -91,7 +125,7 @@ class Main : JavaPlugin() ,Listener {
         }
     }
     fun test(){
-        playerData.toList()
+        playerMap.toList()
     }
     //region イベントコールバック
     @EventHandler
@@ -118,27 +152,27 @@ class Main : JavaPlugin() ,Listener {
     @EventHandler
     fun onPlayerMove(e: PlayerMoveEvent){
         val uuid = e.player.uniqueId
-        playerData[uuid]?.playerMoveCount = playerData[uuid]?.playerMoveCount!! + 1
-        playerData[uuid]?.updateTime = System.currentTimeMillis()
+        playerMap[uuid]?.playerMoveCount = playerMap[uuid]?.playerMoveCount!! + 1
+        playerMap[uuid]?.updateTime = System.currentTimeMillis()
 
     }
     @EventHandler
     fun onBlockBreak(e:BlockBreakEvent){
         val uuid = e.player.uniqueId
-        playerData[uuid]?.blockBreakCount = playerData[uuid]?.blockBreakCount!! + 1
-        playerData[uuid]?.updateTime = System.currentTimeMillis()
+        playerMap[uuid]?.blockBreakCount = playerMap[uuid]?.blockBreakCount!! + 1
+        playerMap[uuid]?.updateTime = System.currentTimeMillis()
     }
 
     @EventHandler
     fun onPlayerJoin(e: PlayerJoinEvent){
         val uuid = e.player.uniqueId
-        playerData.putIfAbsent(uuid,PlayerData(uuid))
+        playerMap.putIfAbsent(uuid,PlayerData())
     }
 
     @EventHandler
     fun onPlayerQuit(e: PlayerQuitEvent) {
         // ログアウトしたユーザーのデータは消去
-        playerData.remove(e.player.uniqueId)
+        playerMap.remove(e.player.uniqueId)
     }
 
     // 銃や弓などのダメージイベント

@@ -2,12 +2,12 @@ package red.man10.camera
 
 import java.util.*
 
-  class PlayerData(uuid:UUID) : Comparable<PlayerData> {
+  class PlayerData() : Comparable<PlayerData> {
 
       var updateTime:Long = System.currentTimeMillis()
       var blockBreakCount:Int = 0
       var playerMoveCount:Int = 0
-      var uuid: UUID? = uuid
+      var uuid:UUID? = null
 
       // ユーザーのアクティブ時間
       fun getSleepTime():Long{

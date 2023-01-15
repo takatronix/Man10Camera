@@ -7,7 +7,6 @@ import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.Player
 import java.lang.Exception
-import java.util.*
 
 
 object Command : CommandExecutor, TabCompleter {
@@ -31,11 +30,13 @@ object Command : CommandExecutor, TabCompleter {
             "rotate" -> rotate(label,sender,args)
             "stop" -> stop(label,sender,args)
             "spectator" -> spectator(label,sender,args)
-            //"look" -> look(label,sender,args)
-         //   "teleport" -> teleport(sender,args)
             "show" -> getCamera(label).show(sender)
             "showbody" -> getCamera(label).showBody(sender)
             "hide" -> getCamera(label).hide(sender)
+            "auto" -> {
+                Main.autoTask = Main.autoTask != true
+                info("自動モード:${Main.autoTask}",sender)
+            }
         }
 
         return false
@@ -82,6 +83,7 @@ object Command : CommandExecutor, TabCompleter {
             "nightvision" -> setNightVision(label,sender,name)
             "broadcast" -> setBroadcast(label,sender,name)
             "notification" -> setNotification(label,sender,name)
+
         }
     }
     private fun setPosition(label:String,sender: CommandSender,value:String){
@@ -182,6 +184,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label rotate (player)    プレイヤーの周りをまわる")
         sender.sendMessage("§a/$label spectator (player) 対象の視点を見る(スペクテーター専用)")
         sender.sendMessage("§a/$label stop               停止")
+        sender.sendMessage("§a/$label auto              　自動モード切替")
 
         sender.sendMessage("§b[設定コマンド]設定は保存されます")
         sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
@@ -230,7 +233,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live")
+            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live","auto")
         }
 
         when(args?.get(0)){
