@@ -15,6 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
 
 class Main : JavaPlugin() ,Listener {
     companion object {
@@ -22,6 +23,7 @@ class Main : JavaPlugin() ,Listener {
         val liveMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
         val spectatoressage = "§f§lさんの視点を§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
         val prefix = "§e[MCR]"
+
         lateinit var plugin: JavaPlugin
         const val cameraCount = 4
         var mc1= CameraThread()
@@ -30,6 +32,9 @@ class Main : JavaPlugin() ,Listener {
         var mc4= CameraThread()
         // プレイヤーの統計データ
         var playerData = ConcurrentHashMap<UUID, PlayerData>()
+
+        var running = true                      // スレッド終了フラグ
+        var taskSleep = 5000L
     }
 
     override fun onEnable() {
@@ -47,20 +52,47 @@ class Main : JavaPlugin() ,Listener {
         mc1.cameraName = "[メインカメラ]"
         mc2.cameraName = "[サブカメラ]"
         mc3.cameraName = "[カメラ３]"
-        mc4.cameraName = "[カメラ4]"
+        mc4.cameraName = "[カメラ４]"
+
         // リロード後のユーザーはjoinイベントがないためデータを作る必要がある
-        Bukkit.getOnlinePlayers().forEach { player ->  playerData.putIfAbsent(player.uniqueId,PlayerData())}
+        Bukkit.getOnlinePlayers().forEach { player ->  playerData.putIfAbsent(player.uniqueId,PlayerData(player.uniqueId))}
+        // 自動処理スレッド
+        thread {
+            info("auto task thread started")
+            while(running){
+                Thread.sleep(taskSleep)
+                autoCameraTask()
+            }
+            info("auto task thread ended")
+        }
+
         plugin.server.pluginManager.registerEvents(this, plugin)
         info("Man10 Camera Plugin Enabled")
     }
 
+    fun autoCameraTask(){
+        var list = playerData.toList()
+        info("-----------------")
+        list.forEach {data: Pair<UUID, PlayerData> ->
+            var data = data.second
+            var player = data.uuid?.let { Bukkit.getPlayer(it) }
+            if (player != null) {
+                info("${player.name}:${data.getSleepTime()} isActive:${data.isActive()}")
+            }
+
+        }
+    }
+
     override fun onDisable() {
         info("Disabling Man10 Camera Plugin")
+        running = false
         for(no in 1..cameraCount) {
             getCamera(no).running = false
         }
     }
-
+    fun test(){
+        playerData.toList()
+    }
     //region イベントコールバック
     @EventHandler
     fun onPickUp(e: EntityPickupItemEvent){
@@ -100,7 +132,7 @@ class Main : JavaPlugin() ,Listener {
     @EventHandler
     fun onPlayerJoin(e: PlayerJoinEvent){
         val uuid = e.player.uniqueId
-        playerData.putIfAbsent(uuid,PlayerData())
+        playerData.putIfAbsent(uuid,PlayerData(uuid))
     }
 
     @EventHandler

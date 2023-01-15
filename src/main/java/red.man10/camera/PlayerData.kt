@@ -1,14 +1,25 @@
 package red.man10.camera
 
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
-  class PlayerData : Comparable<PlayerData> {
+  class PlayerData(uuid:UUID) : Comparable<PlayerData> {
+
       var updateTime:Long = System.currentTimeMillis()
       var blockBreakCount:Int = 0
       var playerMoveCount:Int = 0
+      var uuid: UUID? = uuid
+
+      // ユーザーのアクティブ時間
+      fun getSleepTime():Long{
+          return System.currentTimeMillis() - updateTime
+      }
+
+      // ユーザーがアクティブか
+      fun isActive():Boolean{
+          if(getSleepTime() > 5000)
+              return false
+          return true
+      }
       override fun compareTo(other: PlayerData): Int {
         return (updateTime - other.updateTime).toInt()
       }

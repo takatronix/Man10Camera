@@ -30,20 +30,22 @@ enum class VisibleMode {
 //endregion
 class CameraThread : Thread() {
     //region 内部変数
-    private var wait:Long = 1000 / 60       // 更新サイクル
-    private var target: UUID? = null        // 監視対象
-    private var camera: UUID? = null        // カメラプレーヤ
-    private var angle:Double = 0.0          // 現在のカメラの回転角度(0-360)
+    private var wait:Long = 1000 / 60           // 更新サイクル
+    private var target: UUID? = null            // 監視対象
+    private var camera: UUID? = null            // カメラプレーヤ
+    private var angle:Double = 0.0              // 現在のカメラの回転角度(0-360)
+    private var isTargetOnline:Boolean = false
     //endregion
     //region 設定
-    private var radius:Double = 10.0        // 回転半径
-    private var angleStep = 0.08            // 回転速度
-    private var nightVision = false         // 暗視設定
-    private var broadcast = true            // 配信を全体に通知するか
-    private var notification = true         // 配信を個人に通知するか
+    private var autoTarget:Boolean = true       // ターゲットを見失ったとき
+    private var radius:Double = 10.0            // 回転半径
+    private var angleStep = 0.08                // 回転速度
+    private var nightVision = false             // 暗視設定
+    private var broadcast = true                // 配信を全体に通知するか
+    private var notification = true             // 配信を個人に通知するか
     private var relativePos:Vector= Vector(2.0,2.0,0.0)    // カメラの相対位置
-    private var cameraMode:CameraMode = CameraMode.AUTO    // 動作モード
-    private var visibleMode:VisibleMode = VisibleMode.SHOW  // 表示モード
+    private var cameraMode:CameraMode = CameraMode.AUTO              // 動作モード
+    private var visibleMode:VisibleMode = VisibleMode.SHOW           // 表示モード
     //endregion
     //region プロパティ
     var cameraLabel = ""                     // カメララベル
@@ -104,6 +106,15 @@ class CameraThread : Thread() {
         }
         info("Camera thread ended:${cameraLabel}")
     }
+
+    // ターゲットがオフラインになった
+    private fun onTargetOffline(){
+        if(autoTarget){
+            info("ターゲットがオフラインのため切り替える")
+        }
+    }
+
+
     // スレッドが動作可能か？
     private fun canWork() :Boolean{
         when(cameraMode){
@@ -113,10 +124,18 @@ class CameraThread : Thread() {
                     return true
             }
             else -> {
-                if(cameraPlayer?.isOnline == true && targetPlayer?.isOnline == true)
+                if(cameraPlayer?.isOnline == true && targetPlayer?.isOnline == true){
+                    isTargetOnline = true
                     return true
+                }else{
+                    if(isTargetOnline){
+                        isTargetOnline = false
+                        onTargetOffline()
+                    }
+                }
             }
         }
+
         return false
     }
 
