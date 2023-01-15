@@ -31,12 +31,12 @@ enum class VisibleMode {
 class CameraThread : Thread() {
     var cameraName = ""                 // カメラ名
     var running = true                  // スレッド終了フラグ
-    private var wait:Long = 1000 / 60   // 更新サイクル(60fps)
+    private var wait:Long = 1000 /30   // 更新サイクル
     private var target: Player? = null
     private var camera: Player? = null
     //region 設定
     private var radius:Double = 10.0
-    var angleStep = 0.08            // 回転速度
+    var angleStep = 0.12            // 回転速度
     var angle = 0.0
     var nightVision = false
     var broadcast = false
@@ -44,6 +44,7 @@ class CameraThread : Thread() {
     var relativePos:Vector= Vector(2.0,2.0,0.0)
     // カメラモード
     private var cameraMode:CameraMode = CameraMode.AUTO
+    private var visibleMode:VisibleMode = VisibleMode.SHOW
 
     val uniqueId:UUID?
         get(){ return camera?.uniqueId }
@@ -109,8 +110,15 @@ class CameraThread : Thread() {
         camera?.gameMode = GameMode.CREATIVE
         camera?.gameMode = GameMode.SPECTATOR
         camera?.spectatorTarget  = null
+
+        when(visibleMode){
+            VisibleMode.SHOWBODY -> showBody(sender)
+            VisibleMode.SHOW -> show(sender)
+            else -> VisibleMode.HIDE
+        }
         save(sender)
     }
+
 
     //region 基本コマンド
     // 特定プレイヤーを追跡
@@ -186,8 +194,6 @@ class CameraThread : Thread() {
         return true
     }
 
-
-
     fun onAutoMode(){
     }
     fun onStopMode(){
@@ -210,17 +216,23 @@ class CameraThread : Thread() {
     }
 
     //region 表示モード
-    fun hide(sender:CommandSender){
-        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
+    fun hide(sender:CommandSender) {
+        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 1, true))
         camera?.gameMode = GameMode.SPECTATOR
+        visibleMode = VisibleMode.HIDE
+        save(sender)
     }
     fun show(sender:CommandSender){
         camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
         camera?.gameMode = GameMode.CREATIVE
+        visibleMode = VisibleMode.SHOW
+        save(sender)
     }
     fun showBody(sender:CommandSender){
         camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
         camera?.gameMode = GameMode.CREATIVE
+        visibleMode = VisibleMode.SHOWBODY
+        save(sender)
     }
     //endregion
 
@@ -278,6 +290,7 @@ class CameraThread : Thread() {
             config["target"] = target?.uniqueId.toString()
             config["camera"] = camera?.uniqueId.toString()
             config["cameraMode"] = cameraMode.toString()
+            config["visibleMode"] = visibleMode.toString()
             config["gameMode"] = camera?.gameMode.toString()
             config["radius"] = radius
             config["nightVision"] = nightVision
@@ -308,7 +321,7 @@ class CameraThread : Thread() {
                 camera = Bukkit.getPlayer(UUID.fromString(s))
 
             cameraMode = enumValueOf(config["cameraMode"].toString())
-
+            visibleMode = enumValueOf(config["visibleMode"].toString())
 
             nightVision = config.getBoolean("nightVision")
             broadcast = config.getBoolean("broadcast")

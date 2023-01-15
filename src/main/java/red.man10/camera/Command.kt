@@ -12,13 +12,18 @@ import java.util.*
 
 object Command : CommandExecutor, TabCompleter {
 
+
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-      //  info(args[0],sender)
+
+        if(!sender.hasPermission("red.man10.camera.op")){
+            sender.sendMessage("このコマンドを実行する権限がない")
+            return  false
+        }
+
         if(args.isEmpty()){
             showHelp(label,sender)
             return true
         }
-
 
         when(args[0]){
             "help" -> showHelp(label,sender)
