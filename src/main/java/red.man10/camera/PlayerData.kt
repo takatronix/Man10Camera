@@ -7,6 +7,8 @@ import java.util.*
       var updateTime:Long = System.currentTimeMillis()
       var blockBreakCount:Int = 0
       var playerMoveCount:Int = 0
+      var playerFishCount:Int = 0
+      var inventoryClickCount:Int = 0
       var uuid:UUID? = null
 
       // ユーザーのアクティブ時間
@@ -16,7 +18,7 @@ import java.util.*
 
       // ユーザーがアクティブか
       fun isActive():Boolean{
-          if(getSleepTime() > 5000)
+          if(getSleepTime() > Main.sleepDetect)
               return false
           return true
       }

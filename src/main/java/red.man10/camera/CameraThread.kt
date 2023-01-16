@@ -273,7 +273,16 @@ class CameraThread : Thread() {
     private fun onStopMode(){
     }
     private fun onSpectatorMode(){
-        cameraPlayer?.spectatorTarget = targetPlayer
+        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            if (targetPlayer == null)
+                return@Runnable
+            if (cameraPlayer == null)
+                return@Runnable
+            cameraPlayer?.gameMode = GameMode.SPECTATOR
+            cameraPlayer?.spectatorTarget = targetPlayer
+            val loc = targetPlayer?.location
+            cameraPlayer?.teleport(loc!!)
+        })
     }
     fun onLookMode(){
         lookAt(targetPos)

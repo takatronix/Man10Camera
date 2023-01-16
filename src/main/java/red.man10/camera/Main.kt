@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
@@ -31,6 +32,7 @@ class Main : JavaPlugin() ,Listener {
 
         lateinit var plugin: JavaPlugin
         const val cameraCount = 4
+        const val sleepDetect = 15000
         var mc1= CameraThread()
         var mc2= CameraThread()
         var mc3= CameraThread()
@@ -123,6 +125,8 @@ class Main : JavaPlugin() ,Listener {
             info("切替対象なし")
             return
         }
+        info("アクティブなプレイヤー数:${activeList.size}")
+        activeList.shuffle()
         // 次の表示対象
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
@@ -172,7 +176,18 @@ class Main : JavaPlugin() ,Listener {
         val uuid = e.player.uniqueId
         playerMap[uuid]?.playerMoveCount = playerMap[uuid]?.playerMoveCount!! + 1
         playerMap[uuid]?.updateTime = System.currentTimeMillis()
-
+    }
+    @EventHandler
+    fun onPlayerFish(e: PlayerFishEvent){
+        val uuid = e.player.uniqueId
+        playerMap[uuid]?.playerFishCount = playerMap[uuid]?.playerFishCount!! + 1
+        playerMap[uuid]?.updateTime = System.currentTimeMillis()
+    }
+    @EventHandler
+    fun onInventoryClick(e: InventoryClickEvent){
+        val uuid = e.whoClicked.uniqueId
+        playerMap[uuid]?.inventoryClickCount = playerMap[uuid]?.inventoryClickCount!! + 1
+        playerMap[uuid]?.updateTime = System.currentTimeMillis()
     }
     @EventHandler
     fun onBlockBreak(e:BlockBreakEvent){
