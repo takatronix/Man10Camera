@@ -37,12 +37,23 @@ object Command : CommandExecutor, TabCompleter {
             "auto" -> {
                 Main.commandSender = sender
                 Main.autoTask = Main.autoTask != true
+                Main.taskSwitchCount =0
                 info("自動モード:${Main.autoTask}",sender)
             }
             "server" -> server(label,sender,args)
+            "test" -> test(label,sender,args)
+            "switch" -> {Main.taskSwitchCount = 0}
         }
 
         return false
+    }
+    private fun test(label:String, sender: CommandSender, args: Array<out String>){
+/*
+        val player = getCamera(1).cameraPlayer
+        sendActionText(player!!,"§f§lアクションテキスト")
+        sendTitleText(player!!,"§eTitle")
+
+ */
     }
 
     private fun follow(label:String,sender: CommandSender,args: Array<out String>){
@@ -72,16 +83,6 @@ object Command : CommandExecutor, TabCompleter {
             var player = Bukkit.getOfflinePlayer(uuid)
             sendBungeeCommand(sender,"send ${player.name} $serverName")
         }
-    }
-
-    private fun onlinePlayer(sender: CommandSender, args: Array<out String>): Player?{
-        if(args.size < 2)
-            return null
-        val player = getOnlinePlayer(sender,args[1])
-        if(player != null){
-            sender.sendMessage("${player.name}の追跡を開始")
-        }
-        return player
     }
 
     // set [key] [value]　でカメラ設定を保存
@@ -150,6 +151,15 @@ object Command : CommandExecutor, TabCompleter {
         }
         error("パラメータは、x,y,zの相対座標で指定してください。",sender)
     }
+    private fun onlinePlayer(sender: CommandSender, args: Array<out String>): Player?{
+        if(args.size < 2)
+            return null
+        val player = getOnlinePlayer(sender,args[1])
+        if(player != null){
+            sender.sendMessage("${player.name}の追跡を開始")
+        }
+        return player
+    }
 
     private fun setRadius(label:String,sender: CommandSender,value:String){
         val text= value.split(",")
@@ -205,6 +215,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label spectator (player) 対象の視点を見る(スペクテーター専用)")
         sender.sendMessage("§a/$label stop               停止")
         sender.sendMessage("§a/$label auto              　自動モード切替")
+        sender.sendMessage("§a/$label switch              自動運転のターゲットを切替")
         sender.sendMessage("§a/$label server [サーバ名]    転送先サーバ名")
 
 
@@ -258,7 +269,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live","auto","server")
+            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live","auto","server","switch")
         }
 
         when(args?.get(0)){

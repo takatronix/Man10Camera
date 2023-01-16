@@ -51,7 +51,7 @@ class CameraThread : Thread() {
     var cameraLabel = ""                     // カメララベル
     var cameraName = ""                     // カメラ名称
     var running = true                      // スレッド終了フラグ
-
+    var actionText:String = ""
     public val cameraPlayer:Player?
         get() {
             if(camera == null)
@@ -92,6 +92,8 @@ class CameraThread : Thread() {
         info("Camera thread started:${cameraLabel}")
         while(running){
             sleep(wait)
+
+            sendActionText(cameraPlayer!!,actionText)
             if(!canWork())
                 continue
 
@@ -111,6 +113,7 @@ class CameraThread : Thread() {
     private fun onTargetOffline(){
         if(autoTarget){
             info("ターゲットがオフラインのため切り替える")
+            Main.taskSwitchCount = 0
         }
     }
 
@@ -192,8 +195,9 @@ class CameraThread : Thread() {
         if(player?.isOnline == true){
             target = player.uniqueId
         }
-        info("${cameraLabel}をフォローモードに設定",sender)
+        info("${player!!.name}をフォローモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
+        sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     fun spectator(sender: CommandSender?, player:Player? = null){
         setMode(sender,CameraMode.SPECTATOR)
@@ -202,7 +206,8 @@ class CameraThread : Thread() {
             target = player.uniqueId
             cameraPlayer?.spectatorTarget = targetPlayer
         }
-        info("${cameraLabel}をスペクテーターモードで監視",sender)
+        sendTitleText(cameraPlayer!!,"§d§l${targetPlayer?.name}§f§lさんの視点")
+        info("${player!!.name}をスペクテーターモードで監視",sender)
         notifyUsers(Main.spectatoressage,sender,player)
     }
     // 特定プレイヤーを回転しながら追跡
@@ -213,6 +218,7 @@ class CameraThread : Thread() {
         }
         info("${cameraLabel}を回転モードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
+        sendTitleText(cameraPlayer!!,"§a§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     // カメラを固定でプレイヤーを注視
     fun look(sender: CommandSender,player:Player? = null){

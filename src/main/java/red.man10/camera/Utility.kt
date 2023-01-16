@@ -1,5 +1,9 @@
 package red.man10.camera
 
+import net.kyori.adventure.title.Title
+import net.md_5.bungee.api.ChatMessageType
+import net.md_5.bungee.api.chat.BaseComponent
+import net.md_5.bungee.api.chat.TextComponent
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -13,6 +17,15 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 
 
+fun sendTitleText(player:Player,title:String,subtitle:String="",fadeIn:Int = 10,stay:Int=100,fadeOut:Int = 10){
+    player.sendTitle(title,subtitle,fadeIn,stay,fadeOut)
+}
+fun sendActionText(player:Player,message:String?){
+    if(message.isNullOrEmpty())
+        return
+    val component = TextComponent.fromLegacyText(message)
+    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, component[0])
+}
 // オフラインのプレイヤーを返す
 fun getOfflinePlayer(sender: CommandSender, name:String?): Player?{
     if(name == null){
@@ -54,6 +67,8 @@ class Utility {
     fun toAngle(radian: Double): Double {
         return radian * 180 / Math.PI
     }
+
+
     /*
     private fun getAngle(player: Player): Double {
         var rotation = ((player.location.yaw - 90) % 360).toDouble()
@@ -72,7 +87,6 @@ class Utility {
         (player as CraftPlayer).getHandle().playerConnection.sendPacket(title)
         (player as CraftPlayer).getHandle().playerConnection.sendPacket(length)
     }
-
     fun sAB(player: Player, message: String) {
         val p: CraftPlayer = player as CraftPlayer
         val b: ChatMessageType = net.minecraft.server.v1_14_R1.ChatMessageType.GAME_INFO
@@ -80,6 +94,7 @@ class Utility {
         val ppoc = PacketPlayOutChat(cbc, b)
         (p as CraftPlayer).getHandle().playerConnection.sendPacket(ppoc)
     }
+
 */
     @Throws(IllegalStateException::class)
     fun toBase64(inventory: Inventory): String? {

@@ -42,7 +42,8 @@ class Main : JavaPlugin() ,Listener {
 
         var autoTask = false
         var running = true                      // スレッド終了フラグ
-        var taskSleep = 60000L
+        var taskSwitchTime = 60                 // タスク切替タイミング
+        var taskSwitchCount = 60                // 減算していき０になったらスイッチする
     }
 
     override fun onEnable() {
@@ -68,9 +69,14 @@ class Main : JavaPlugin() ,Listener {
         thread {
             info("auto task thread started")
             while(running){
-                Thread.sleep(taskSleep)
-                if(autoTask)
-                    autoCameraTask()
+                Thread.sleep(1000)
+                taskSwitchCount --
+                if(taskSwitchCount <= 0){
+                    taskSwitchCount = taskSwitchTime
+                    if(autoTask)
+                        autoCameraTask()
+                }
+
             }
             info("auto task thread ended")
         }
@@ -127,6 +133,7 @@ class Main : JavaPlugin() ,Listener {
         }
         info("アクティブなプレイヤー数:${activeList.size}")
         activeList.shuffle()
+
         // 次の表示対象
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
@@ -134,6 +141,9 @@ class Main : JavaPlugin() ,Listener {
                 sendBungeeMessage(commandSender!!," &a&l"+ player.name +bungeeLiveMessage)
                 getCamera(1).rotate(null,player)
                 getCamera(2).spectator(null,player)
+
+                var text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
+                getCamera(1).actionText = text
             }
         })
 
@@ -200,6 +210,10 @@ class Main : JavaPlugin() ,Listener {
     fun onPlayerJoin(e: PlayerJoinEvent){
         val uuid = e.player.uniqueId
         playerMap.putIfAbsent(uuid,PlayerData())
+
+        if(isCamera(e.player)){
+            Main.taskSwitchCount = 3
+        }
     }
 
     @EventHandler
