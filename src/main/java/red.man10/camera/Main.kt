@@ -92,6 +92,16 @@ class Main : JavaPlugin() ,Listener {
     fun autoCameraTask(){
 
         info("自動切換えタスク")
+
+        if(getCamera(1).cameraPlayer == null){
+            info("camera1がいないため自動処理は停止")
+            return
+        }
+        if(getCamera(2).cameraPlayer == null){
+            info("camera2がいないため自動処理は停止")
+            return
+        }
+
         // アクティブなプレイヤー順にソート
         var list = playerMap.toList().sortedByDescending { it.second.updateTime }
         var activeList:MutableList<PlayerData>  = mutableListOf()
@@ -113,27 +123,14 @@ class Main : JavaPlugin() ,Listener {
             info("切替対象なし")
             return
         }
-
         // 次の表示対象
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
-
-            if(getCamera(1).cameraPlayer?.isOnline == false){
-                error("camera1が無効")
-                return@Runnable
-            }
-            if(getCamera(2).cameraPlayer?.isOnline == false){
-                error("camera2が無効")
-                return@Runnable
-            }
-            getCamera(1).rotate(null,player)
-            getCamera(2).spectator(null,player)
-
             if (player != null) {
                 sendBungeeMessage(commandSender!!," &a&l"+ player.name +bungeeLiveMessage)
+                getCamera(1).rotate(null,player)
+                getCamera(2).spectator(null,player)
             }
-
-
         })
 
     }
@@ -217,10 +214,10 @@ class Main : JavaPlugin() ,Listener {
 
 }
 
-fun sendBungeeComand(sender:CommandSender,command:String){
+fun sendBungeeCommand(sender:CommandSender,command:String){
     Bukkit.dispatchCommand(sender,"bungeee ${command}")
 }
-fun sendBungeeMessage(sender: CommandSender, message:String){
+fun sendBungeeMessage(sender: CommandSender,message:String){
     Bukkit.dispatchCommand(sender,"bungeee alert ${message}")
 }
 

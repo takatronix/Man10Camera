@@ -1,5 +1,6 @@
 package red.man10.camera
 
+import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -38,6 +39,7 @@ object Command : CommandExecutor, TabCompleter {
                 Main.autoTask = Main.autoTask != true
                 info("自動モード:${Main.autoTask}",sender)
             }
+            "server" -> server(label,sender,args)
         }
 
         return false
@@ -55,6 +57,23 @@ object Command : CommandExecutor, TabCompleter {
     private fun stop(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).stop(sender, onlinePlayer(sender,args))
     }
+
+
+    private fun server(label:String, sender: CommandSender, args: Array<out String>){
+        if(args.size != 2){
+            error("転送先サーバ名を指定してください",sender)
+            return
+        }
+        val serverName = args[1]
+        for(no in 1..Main.cameraCount) {
+            var uuid = getCamera(no).uniqueId
+            if(uuid == null)
+                continue
+            var player = Bukkit.getOfflinePlayer(uuid)
+            sendBungeeCommand(sender,"send ${player.name} $serverName")
+        }
+    }
+
     private fun onlinePlayer(sender: CommandSender, args: Array<out String>): Player?{
         if(args.size < 2)
             return null
@@ -186,6 +205,8 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label spectator (player) 対象の視点を見る(スペクテーター専用)")
         sender.sendMessage("§a/$label stop               停止")
         sender.sendMessage("§a/$label auto              　自動モード切替")
+        sender.sendMessage("§a/$label server [サーバ名]    転送先サーバ名")
+
 
         sender.sendMessage("§b[設定コマンド]設定は保存されます")
         sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
@@ -237,7 +258,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live","auto")
+            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live","auto","server")
         }
 
         when(args?.get(0)){

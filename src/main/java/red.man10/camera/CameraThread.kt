@@ -294,14 +294,14 @@ class CameraThread : Thread() {
     //region 表示モード
     fun hide(sender:CommandSender) {
         val camera = cameraPlayer
-        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 1, true))
+        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 1, true,true))
         camera?.gameMode = GameMode.SPECTATOR
         visibleMode = VisibleMode.HIDE
         save(sender)
     }
     fun show(sender:CommandSender?){
         val camera = cameraPlayer
-        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true))
+        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,1,true,true))
         camera?.gameMode = GameMode.CREATIVE
         visibleMode = VisibleMode.SHOW
         save(sender)
@@ -318,7 +318,7 @@ class CameraThread : Thread() {
     fun setNightVision(sender:CommandSender?,flag:Boolean){
         val camera = cameraPlayer
         if(flag)
-            camera?.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,1,true))
+            camera?.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,1,true,true))
         else
             camera?.removePotionEffect(PotionEffectType.NIGHT_VISION)
         nightVision = flag
