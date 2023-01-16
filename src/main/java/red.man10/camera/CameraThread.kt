@@ -52,7 +52,7 @@ class CameraThread : Thread() {
     var cameraName = ""                     // カメラ名称
     var running = true                      // スレッド終了フラグ
 
-    private val cameraPlayer:Player?
+    public val cameraPlayer:Player?
         get() {
             if(camera == null)
                 return null
@@ -152,7 +152,7 @@ class CameraThread : Thread() {
         camera?.spectatorTarget  = null
         save(sender)
 
-        resetAllPostionEffects(cameraPlayer!!)
+      //  resetAllPostionEffects(cameraPlayer!!)
         // スペクテーターモードの時はボディの表示は必要ない
         if(mode == CameraMode.SPECTATOR){
             return
@@ -168,6 +168,8 @@ class CameraThread : Thread() {
 
     // 鯖にいるユーザーに通知する
     private fun notifyUsers(message:String,sender: CommandSender?, target:Player?){
+        if(sender == null)
+            return
         Bukkit.getOnlinePlayers().forEach {
             p ->
             run {
@@ -271,6 +273,7 @@ class CameraThread : Thread() {
     private fun onStopMode(){
     }
     private fun onSpectatorMode(){
+        cameraPlayer?.spectatorTarget = targetPlayer
     }
     fun onLookMode(){
         lookAt(targetPos)

@@ -1,6 +1,5 @@
 package red.man10.camera
 
-import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -10,6 +9,7 @@ import java.lang.Exception
 
 
 object Command : CommandExecutor, TabCompleter {
+
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
 
         if(!sender.hasPermission("red.man10.camera.op")){
@@ -34,6 +34,7 @@ object Command : CommandExecutor, TabCompleter {
             "showbody" -> getCamera(label).showBody(sender)
             "hide" -> getCamera(label).hide(sender)
             "auto" -> {
+                Main.commandSender = sender
                 Main.autoTask = Main.autoTask != true
                 info("自動モード:${Main.autoTask}",sender)
             }
@@ -224,9 +225,12 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§b=======[Author: takatronix /  https://man10.red]=============")
     }
     private fun youtube(label:String,sender: CommandSender){
+
+        sendBungeeMessage(sender,Main.youtubeMessage)
+        /*
         Bukkit.getOnlinePlayers().forEach {
             player -> player.sendMessage(Main.broadcastMessage)
-        }
+        }*/
     }
 
     // タブ補完

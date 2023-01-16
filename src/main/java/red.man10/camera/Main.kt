@@ -20,6 +20,10 @@ import kotlin.concurrent.thread
 
 class Main : JavaPlugin() ,Listener {
     companion object {
+        var commandSender:CommandSender?= null
+        val youtubeMessage = "&c&lYoutubeライブ配信中!! &f&l->  &f&l&nhttps://www.youtube.com/@man10server/live"
+        val bungeeLiveMessage = "&f&lさんを&c&lYoutubeでライブ配信中！！  &f&l&nhttps://www.youtube.com/@man10server/live"
+
         val broadcastMessage = "§c§lYoutubeライブ配信中!! §f§l->  §f§l§nhttps://www.youtube.com/@man10server/live"
         val liveMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
         val spectatoressage = "§f§lさんの視点を§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
@@ -115,6 +119,10 @@ class Main : JavaPlugin() ,Listener {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             getCamera(1).rotate(null,player)
             getCamera(2).spectator(null,player)
+
+            if (player != null) {
+                sendBungeeMessage(Main.commandSender!!," &a&l"+ player.name +bungeeLiveMessage)
+            }
         })
 
     }
@@ -196,6 +204,13 @@ class Main : JavaPlugin() ,Listener {
     }
     //endregion
 
+}
+
+fun sendBungeeComand(sender:CommandSender,command:String){
+    Bukkit.dispatchCommand(sender,"bungeee ${command}")
+}
+fun sendBungeeMessage(sender: CommandSender, message:String){
+    Bukkit.dispatchCommand(sender,"bungeee alert ${message}")
 }
 
 //region 共通関数
