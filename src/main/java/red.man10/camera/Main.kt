@@ -117,12 +117,23 @@ class Main : JavaPlugin() ,Listener {
         // 次の表示対象
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
+
+            if(getCamera(1).cameraPlayer?.isOnline == false){
+                error("camera1が無効")
+                return@Runnable
+            }
+            if(getCamera(2).cameraPlayer?.isOnline == false){
+                error("camera2が無効")
+                return@Runnable
+            }
             getCamera(1).rotate(null,player)
             getCamera(2).spectator(null,player)
 
             if (player != null) {
-                sendBungeeMessage(Main.commandSender!!," &a&l"+ player.name +bungeeLiveMessage)
+                sendBungeeMessage(commandSender!!," &a&l"+ player.name +bungeeLiveMessage)
             }
+
+
         })
 
     }

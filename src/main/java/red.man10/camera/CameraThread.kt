@@ -116,7 +116,7 @@ class CameraThread : Thread() {
 
 
     // スレッドが動作可能か？
-    private fun canWork() :Boolean{
+    fun canWork() :Boolean{
         when(cameraMode){
             // Lookモードは対象がなくてもOK
             CameraMode.LOOK -> {
