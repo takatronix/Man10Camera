@@ -20,8 +20,12 @@ import java.io.IOException
 fun sendTitleText(player:Player,title:String,subtitle:String="",fadeIn:Int = 10,stay:Int=100,fadeOut:Int = 10){
     player.sendTitle(title,subtitle,fadeIn,stay,fadeOut)
 }
-fun sendActionText(player:Player,message:String?){
+fun sendActionText(player:Player?,message:String?){
     if(message.isNullOrEmpty())
+        return
+    if(player ==null)
+        return
+    if(!player.isOnline)
         return
     val component = TextComponent.fromLegacyText(message)
     player.spigot().sendMessage(ChatMessageType.ACTION_BAR, component[0])

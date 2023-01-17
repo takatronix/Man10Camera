@@ -35,6 +35,7 @@ class CameraThread : Thread() {
     private var camera: UUID? = null            // カメラプレーヤ
     private var angle:Double = 0.0              // 現在のカメラの回転角度(0-360)
     private var isTargetOnline:Boolean = false
+
     //endregion
     //region 設定
     private var autoTarget:Boolean = true       // ターゲットを見失ったとき
@@ -93,7 +94,10 @@ class CameraThread : Thread() {
         while(running){
             sleep(wait)
 
-            sendActionText(cameraPlayer!!,actionText)
+            Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+                sendActionText(cameraPlayer,actionText)
+            })
+
             if(!canWork())
                 continue
 
@@ -117,6 +121,9 @@ class CameraThread : Thread() {
         }
     }
 
+    fun changeGameMode(mode:GameMode){
+
+    }
 
     // スレッドが動作可能か？
     fun canWork() :Boolean{
