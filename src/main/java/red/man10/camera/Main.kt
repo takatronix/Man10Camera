@@ -2,6 +2,7 @@ package red.man10.camera
 
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
+import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.entity.Player
 import org.bukkit.entity.Projectile
 import org.bukkit.event.EventHandler
@@ -17,7 +18,6 @@ import org.bukkit.projectiles.ProjectileSource
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
-
 
 class Main : JavaPlugin() ,Listener {
     companion object {
@@ -44,6 +44,7 @@ class Main : JavaPlugin() ,Listener {
         var running = true                      // スレッド終了フラグ
         var taskSwitchTime = 60                 // タスク切替タイミング
         var taskSwitchCount = 60                // 減算していき０になったらスイッチする
+        //var config: FileConfiguration
     }
 
     override fun onEnable() {
@@ -135,12 +136,12 @@ class Main : JavaPlugin() ,Listener {
         activeList.shuffle()
 
         // 次の表示対象
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(plugin, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             if (player != null) {
                 sendBungeeMessage(commandSender!!," &a&l"+ player.name +bungeeLiveMessage)
                 getCamera(1).rotate(null,player)
-                getCamera(2).spectator(null,player)
+                getCamera(2).spectate(null,player)
 
                 var text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
                 getCamera(1).actionText = text
@@ -212,7 +213,7 @@ class Main : JavaPlugin() ,Listener {
         playerMap.putIfAbsent(uuid,PlayerData())
 
         if(isCamera(e.player)){
-            Main.taskSwitchCount = 3
+            taskSwitchCount = 3
         }
     }
 
@@ -303,4 +304,14 @@ private fun isTarget(player:Player?):Boolean{
     return false
 }
 //endregion
+
+private fun save(sender: CommandSender?=null): Boolean {
+
+    return true
+}
+
+fun load(sender: CommandSender? = null): Boolean {
+
+    return true
+}
 

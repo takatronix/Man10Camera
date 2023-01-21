@@ -30,7 +30,7 @@ object Command : CommandExecutor, TabCompleter {
             "follow" -> follow(label,sender,args)
             "rotate" -> rotate(label,sender,args)
             "stop" -> stop(label,sender,args)
-            "spectator" -> spectator(label,sender,args)
+            "spectate" -> spectate(label,sender,args)
             "show" -> getCamera(label).show(sender)
             "showbody" -> getCamera(label).showBody(sender)
             "hide" -> getCamera(label).hide(sender)
@@ -62,8 +62,8 @@ object Command : CommandExecutor, TabCompleter {
     private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).rotate(sender, onlinePlayer(sender,args))
     }
-    private fun spectator(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).spectator(sender, onlinePlayer(sender,args))
+    private fun spectate(label:String, sender: CommandSender, args: Array<out String>){
+        getCamera(label).spectate(sender, onlinePlayer(sender,args))
     }
     private fun stop(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).stop(sender, onlinePlayer(sender,args))
@@ -212,7 +212,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§b[動作モード制御]")
         sender.sendMessage("§a/$label follow (player)    プレイヤーを追跡する")
         sender.sendMessage("§a/$label rotate (player)    プレイヤーの周りをまわる")
-        sender.sendMessage("§a/$label spectator (player) 対象の視点を見る(スペクテーター専用)")
+        sender.sendMessage("§a/$label spectate (player) 対象の視点を見る(スペクテーター専用)")
         sender.sendMessage("§a/$label stop               停止")
         sender.sendMessage("§a/$label auto              　自動モード切替")
         sender.sendMessage("§a/$label switch              自動運転のターゲットを切替")
@@ -269,7 +269,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectator","stop","show","showbody","hide","live","auto","server","switch")
+            return listOf("set","follow","rotate","look","spectate","stop","show","showbody","hide","live","auto","server","switch")
         }
 
         when(args?.get(0)){
