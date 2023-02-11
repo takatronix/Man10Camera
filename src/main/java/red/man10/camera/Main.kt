@@ -28,7 +28,7 @@ class Main : JavaPlugin() ,Listener {
         val broadcastMessage = "§c§lYoutubeライブ配信中!! §f§l->  §f§l§nhttps://www.youtube.com/@man10server/live"
         val liveMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
         val spectatoressage = "§f§lさんの視点を§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
-        val prefix = "§e[MCR]"
+        val prefix = "§e[MCX]"
 
         lateinit var plugin: JavaPlugin
         const val cameraCount = 4
@@ -44,12 +44,15 @@ class Main : JavaPlugin() ,Listener {
         var running = true                      // スレッド終了フラグ
         var taskSwitchTime = 60                 // タスク切替タイミング
         var taskSwitchCount = 60                // 減算していき０になったらスイッチする
+        var broadcast:Boolean = false
+        var serverName:String? = null           // サーバ名
         //var config: FileConfiguration
     }
 
     override fun onEnable() {
         plugin = this
         saveDefaultConfig()
+        load()
         // カメラスレッド生成
         for(no in 1..cameraCount){
             val label = "mc$no"
@@ -139,11 +142,10 @@ class Main : JavaPlugin() ,Listener {
         Bukkit.getScheduler().runTask(plugin, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             if (player != null) {
-                sendBungeeMessage(commandSender!!," &a&l"+ player.name +bungeeLiveMessage)
+                sendBungeeMessage(commandSender!!," &a&l"+ player.name + bungeeLiveMessage)
                 getCamera(1).rotate(null,player)
                 getCamera(2).spectate(null,player)
-
-                var text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
+                val text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
                 getCamera(1).actionText = text
             }
         })

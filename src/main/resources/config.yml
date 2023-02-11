@@ -1,3 +1,13 @@
+serverName: ''
+broadcast: false
+switchTime: 60
+servers:
+  - man10
+  - shigen
+  - casino
+  - login
+  - market
+
 mc1:
   camera: camera1
   location: location1

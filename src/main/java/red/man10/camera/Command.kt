@@ -1,12 +1,12 @@
 package red.man10.camera
 
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
-import org.bukkit.entity.Player
-import java.lang.Exception
+import org.bukkit.entity.*
 
 
 object Command : CommandExecutor, TabCompleter {
@@ -29,6 +29,7 @@ object Command : CommandExecutor, TabCompleter {
             "set" -> set(label,sender,args)
             "follow" -> follow(label,sender,args)
             "rotate" -> rotate(label,sender,args)
+            "clone" -> clone(label,sender,args)
             "stop" -> stop(label,sender,args)
             "spectate" -> spectate(label,sender,args)
             "show" -> getCamera(label).show(sender)
@@ -43,6 +44,7 @@ object Command : CommandExecutor, TabCompleter {
             "server" -> server(label,sender,args)
             "test" -> test(label,sender,args)
             "switch" -> {Main.taskSwitchCount = 0}
+            "baordcast" -> setBroadcast(label,sender,args)
         }
 
         return false
@@ -59,6 +61,9 @@ object Command : CommandExecutor, TabCompleter {
     private fun follow(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).follow(sender, onlinePlayer(sender,args))
     }
+    private fun clone(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).clone(sender, onlinePlayer(sender,args))
+    }
     private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).rotate(sender, onlinePlayer(sender,args))
     }
@@ -68,7 +73,18 @@ object Command : CommandExecutor, TabCompleter {
     private fun stop(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).stop(sender, onlinePlayer(sender,args))
     }
+    private fun setBroadcast(label:String,sender: CommandSender,args: Array<out String>){
+        if(args.size > 3 || args.size < 1 ){
+            error("コマンドエラー: -> set broadcast 'on/off'" ,sender)
+            return
+        }
+        // baordcast
+        if(args.size == 3){
 
+        }
+
+        getCamera(label).rotate(sender, onlinePlayer(sender,args))
+    }
 
     private fun server(label:String, sender: CommandSender, args: Array<out String>){
         if(args.size != 2){
@@ -102,7 +118,6 @@ object Command : CommandExecutor, TabCompleter {
             "radius" -> setRadius(label,sender,name)
             "height" -> setHeight(label,sender,name)
             "nightvision" -> setNightVision(label,sender,name)
-            "broadcast" -> setBroadcast(label,sender,name)
             "notification" -> setNotification(label,sender,name)
 
         }
@@ -193,12 +208,7 @@ object Command : CommandExecutor, TabCompleter {
             else -> getCamera(label).setNightVision(sender,false)
         }
     }
-    private fun setBroadcast(label:String,sender: CommandSender,value:String){
-        when(value){
-            "on" -> getCamera(label).setBroadcast(sender,true)
-            else -> getCamera(label).setBroadcast(sender,false)
-        }
-    }
+
     private fun setNotification(label:String,sender: CommandSender,value:String){
         when(value){
             "on" -> getCamera(label).setNotification(sender,true)
@@ -285,4 +295,69 @@ object Command : CommandExecutor, TabCompleter {
     }
 
 
+    //
+    /*
+    fun onCommand(
+        @NotNull sender: CommandSender,
+        @NotNull command: Command?,
+        @NotNull label: String?,
+        @NotNull args: Array<String>
+    ): Boolean {
+        val p: Player?
+        if (args.size == 4) {
+            p = Bukkit.getPlayer(args[3])
+            if (p == null || !p.isOnline || p.name != args[3]) {
+                sender.sendMessage(Man10Raid.prefix + "§c§lプレイヤーが存在しません")
+                return false
+            }
+        } else {
+            p = sender as Player
+        }
+        if (playerInVision.contains(p.uniqueId)) {
+            sender.sendMessage(Man10Raid.prefix + "§c§lプレイヤーはすでにエフェクト付与中です")
+            return false
+        }
+        playerInVision.add(p!!.uniqueId)
+        var view: Monster? = null
+        if (args[2].equals("creeper", ignoreCase = true)) view =
+            p.world.spawnEntity(p.location, EntityType.CREEPER) as Creeper
+        if (args[2].equals("enderman", ignoreCase = true)) view =
+            p.world.spawnEntity(p.location, EntityType.ENDERMAN) as Enderman
+        if (args[2].equals("spider", ignoreCase = true)) view =
+            p.world.spawnEntity(p.location, EntityType.SPIDER) as Spider
+        if (view == null) return false
+        if (view is Creeper) {
+            view.maxFuseTicks = 1000
+        }
+        val finalView: Monster = view
+        finalView.isInvisible = true
+        finalView.isSilent = true
+        finalView.isInvulnerable = true
+        finalView.teleport(p.location)
+        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+            val pastLocation: Location = p.location
+            Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+                val directionVector: Vector = p.location.subtract(pastLocation).toVector()
+                if (directionVector.length() !== 0) finalView.velocity = directionVector.normalize().multiply(
+                    Math.sqrt(
+                        pastLocation.distance(
+                            p.location
+                        )
+                    )
+                )
+                finalView.isAware = false
+                val current = p.gameMode
+                p.gameMode = GameMode.SPECTATOR
+                finalView.setRotation(p.location.yaw, p.location.pitch)
+                p.spectatorTarget = finalView
+                Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+                    p.gameMode = current
+                    finalView.remove()
+                    playerInVision.remove(p.uniqueId)
+                }, 20L * args[1].toInt())
+            }, 2)
+        }, 1)
+        return true
+    }
+*/
 }
