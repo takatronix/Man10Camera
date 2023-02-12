@@ -220,35 +220,7 @@ object Command : CommandExecutor, TabCompleter {
         }
         error("パラメータは、x,y,zの相対座標で指定してください。",sender)
     }
-    private fun look(sender: CommandSender,value:String){
-        val xyz= value.split(",")
-        if(xyz.size == 3){
-            try{
-                val x = xyz[0].toDouble()
-                val y = xyz[1].toDouble()
-                val z = xyz[2].toDouble()
-                return
-            }catch (ex:Exception){
-                error(ex.localizedMessage)
-            }
-        }
-        error("パラメータは、x,y,zの相対座標で指定してください。",sender)
-    }
-    private fun teleport(sender: CommandSender,value:String){
-        val xyz= value.split(",")
-        if(xyz.size == 3){
-            try{
-                val x = xyz[0].toDouble()
-                val y = xyz[1].toDouble()
-                val z = xyz[2].toDouble()
-               // Main.cameraThread1.teleport(sender,x,y,z)
-                return
-            }catch (ex:Exception){
-                error(ex.localizedMessage)
-            }
-        }
-        error("パラメータは、x,y,zの相対座標で指定してください。",sender)
-    }
+
     private fun onlinePlayer(sender: CommandSender, args: Array<out String>): Player?{
         if(args.size < 2)
             return null
