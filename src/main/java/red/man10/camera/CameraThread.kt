@@ -2,10 +2,8 @@ package red.man10.camera
 import org.bukkit.*
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.YamlConfiguration
-import org.bukkit.entity.FallingBlock
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import org.bukkit.plugin.Plugin
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.util.Vector
@@ -49,9 +47,11 @@ class CameraThread : Thread() {
     private var radius:Double = 5.0            // 回転半径
     private var height:Double = 2.0
     private var angleStep = 0.08                // 回転速度
-    private var nightVision = false             // 暗視設定
+    private var nightVisionFlag = false           // 暗視設定
    // private var broadcast = true                // 配信を全体に通知するか
-    private var notification = true             // 配信を個人に通知するか
+    private var notificationFlag = true             // 配信を個人に通知するか
+    private var titleFlag = true             // 配信を個人に通知するか
+
     private var relativePos:Vector= Vector(5.0,2.0,0.0)    // カメラの相対位置
     private var cameraMode:CameraMode = CameraMode.AUTO              // 動作モード
     private var visibleMode:VisibleMode = VisibleMode.SHOW           // 表示モード
@@ -127,7 +127,7 @@ class CameraThread : Thread() {
                 CameraMode.SPECTATOR -> onSpectatorMode()
                 CameraMode.FOLLOW -> onFollowMode()
                 CameraMode.ROTATE -> onRotateMode()
-                CameraMode.LOOK -> onSpectatorMode()
+                CameraMode.LOOK -> onLookMode()
                 CameraMode.CLONE -> onCloneMode()
                 CameraMode.BACK -> onBackMode()
                 CameraMode.BACKVIEW -> onBackViewMode()
@@ -169,7 +169,14 @@ class CameraThread : Thread() {
     public fun changeMode(mode:CameraMode){
         cameraMode = mode
     }
-
+    fun showModeTitle(title:String, subtitle:String="", fadeIn:Int = 10, stay:Int=100, fadeOut:Int = 10){
+        if(titleFlag)
+            cameraPlayer?.sendTitle(title,subtitle,fadeIn,stay,fadeOut)
+    }
+    fun sendTitle(title:String, subtitle:String="",time:Double = 3.0){
+        val tick = time * 20
+        cameraPlayer?.sendTitle(title.replace("&","§"),subtitle.replace("&","§"),10,tick.toInt(),10)
+    }
     // スレッドが動作可能か？
     fun canWork() :Boolean{
         when(cameraMode){
@@ -221,7 +228,7 @@ class CameraThread : Thread() {
             VisibleMode.SHOW -> show(sender)
             VisibleMode.HIDE -> hide(sender)
         }
-        setNightVision(sender,nightVision)
+        setNightVision(sender,nightVisionFlag)
     }
 
     // 鯖にいるユーザーに通知する
@@ -236,7 +243,7 @@ class CameraThread : Thread() {
                 if(Main.broadcast)
                     p.sendMessage("§e§l"+cameraName+" §a§l"+ target.name +message)
                 else{
-                    if(notification && target == p)
+                    if(notificationFlag && target == p)
                         p.sendMessage("§e§l"+cameraName+" §a§l"+ target.name +message)
                 }
             }
@@ -286,10 +293,9 @@ class CameraThread : Thread() {
 
         showCamera();
 
-
         info("${player!!.name}をフォローモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
-        sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+        showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     fun back(sender: CommandSender?,player:Player? = null){
         target = player?.uniqueId
@@ -311,10 +317,9 @@ class CameraThread : Thread() {
 
         showCamera();
 
-
         info("${player!!.name}を背後モードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
-        sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+        showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     fun backView(sender: CommandSender?,player:Player? = null){
         target = player?.uniqueId
@@ -338,7 +343,7 @@ class CameraThread : Thread() {
 
         info("${player!!.name}を背後Viewモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
-        sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+      //  sendTitleText("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     fun clone(sender: CommandSender?,player:Player? = null){
         target = player?.uniqueId
@@ -355,7 +360,8 @@ class CameraThread : Thread() {
         cameraPlayer?.hidePlayer(Main.plugin,targetPlayer!!)
         info("${player!!.name}をクローンモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
-     //   sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+
+      //  sendTitleText("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
 
     fun showCamera(){
@@ -378,7 +384,7 @@ class CameraThread : Thread() {
             return
 
         showCamera();
-        sendTitleText(cameraPlayer!!,"§d§l${targetPlayer?.name}§f§lさんの視点")
+        showModeTitle("§d§l${targetPlayer?.name}§f§lさんの視点")
         info("${player!!.name}をスペクテーターモードで監視",sender)
         notifyUsers(Main.spectatoressage,sender,player)
     }
@@ -394,16 +400,17 @@ class CameraThread : Thread() {
         showCamera();
         info("${cameraLabel}を回転モードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
-        sendTitleText(cameraPlayer!!,"§a§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+        showModeTitle("§a§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     // カメラを固定でプレイヤーを注視
     fun look(sender: CommandSender,player:Player? = null){
-        setMode(sender,CameraMode.ROTATE)
+        setMode(sender,CameraMode.LOOK)
         if(player?.isOnline == true){
             target = player.uniqueId
         }
         info("${cameraLabel}をルックモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
+        showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     // カメラ停止
     fun stop(sender: CommandSender,player:Player? = null){
@@ -598,12 +605,19 @@ class CameraThread : Thread() {
         if(camera?.isOnline == false){
             error("カメラがオンラインではないのでナイトビジョンにできない",sender)
         }
-        nightVision = flag
+        nightVisionFlag = flag
         info("{$cameraName}ナイトビジョンを{$flag}にしました",sender)
+        save(sender)
     }
     fun setNotification(sender:CommandSender,flag:Boolean){
-        notification = flag
+        notificationFlag = flag
         info("{$cameraName}個人通知を{$flag}にしました",sender)
+        save(sender)
+    }
+    fun setTitleFlag(sender:CommandSender,flag:Boolean){
+        titleFlag = flag
+        info("{$cameraName}タイトル表示を{$flag}にしました",sender)
+        save(sender)
     }
     private fun onRotateMode(){
         // ターゲットの相対位置のカメラ位置
@@ -651,8 +665,10 @@ class CameraThread : Thread() {
             config["gameMode"] = cameraPlayer?.gameMode.toString()
             config["radius"] = radius
             config["height"] = height
-            config["nightVision"] = nightVision
-            config["notification"] = notification
+            config["nightVisionFlag"] = nightVisionFlag
+            config["notificationFlag"] = notificationFlag
+            config["titleFlag"] = titleFlag
+
             config.save(file)
         }
         catch (e:Exception){
@@ -680,8 +696,10 @@ class CameraThread : Thread() {
 
             cameraMode = enumValueOf(config["cameraMode"].toString())
             visibleMode = enumValueOf(config["visibleMode"].toString())
-            nightVision = config.getBoolean("nightVision",true)
-            notification = config.getBoolean("notification",true)
+            nightVisionFlag = config.getBoolean("nightVisionFlag",true)
+            notificationFlag = config.getBoolean("notificationFlag",true)
+            titleFlag = config.getBoolean("titleFlag",true)
+
             // 回転半径
             radius = config.getDouble("radius",5.0)
             height = config.getDouble("height",2.0)

@@ -36,12 +36,15 @@ object Command : CommandExecutor, TabCompleter {
             "backview" -> backView(label,sender,args)
             "rotate" -> rotate(label,sender,args)
             "clone" -> clone(label,sender,args)
+            "look" -> look(label,sender,args)
             "tp" -> tp(label,sender,args)
             "stop" -> stop(label,sender,args)
             "spectate" -> spectate(label,sender,args)
             "show" -> getCamera(label).show(sender)
             "showbody" -> getCamera(label).showBody(sender)
             "hide" -> getCamera(label).hide(sender)
+            "title" -> title(label,sender,args)
+           // "text" -> text(label,sender,args)
             "auto" -> {
                 Main.commandSender = sender
                 Main.autoTask = Main.autoTask != true
@@ -67,6 +70,9 @@ object Command : CommandExecutor, TabCompleter {
 
     private fun follow(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).follow(sender, onlinePlayer(sender,args))
+    }
+    private fun look(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).look(sender, onlinePlayer(sender,args))
     }
     private fun back(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).back(sender, onlinePlayer(sender,args))
@@ -113,8 +119,25 @@ object Command : CommandExecutor, TabCompleter {
             val loc = Location(Bukkit.getWorld(w),x,y,z,yaw,pitch)
             getCamera(label).cameraPlayer!!.teleport(loc)
         })
+    }
 
+    private fun title(label:String,sender: CommandSender,args: Array<out String>){
+        if(args.size < 2){
+            error("コマンドエラー: -> title [title ] [subtitle] [time=3.0])" ,sender)
+            return
+        }
+        var title = args[1]
+        var sub =""
+        var time = 3.0
+        if(args.size >= 3)
+             sub = args[2]
+        if(args.size >= 4)
+             time = args[3].toDouble()
+        getCamera(label).sendTitle(title,sub,time)
 
+        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+
+        })
     }
     private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).rotate(sender, onlinePlayer(sender,args))
@@ -170,6 +193,7 @@ object Command : CommandExecutor, TabCompleter {
             "height" -> setHeight(label,sender,name)
             "nightvision" -> setNightVision(label,sender,name)
             "notification" -> setNotification(label,sender,name)
+            "title" -> setTitleFlag(label,sender,name)
 
         }
     }
@@ -266,6 +290,12 @@ object Command : CommandExecutor, TabCompleter {
             else -> getCamera(label).setNotification(sender,false)
         }
     }
+    private fun setTitleFlag(label:String,sender: CommandSender,value:String){
+        when(value){
+            "on" -> getCamera(label).setTitleFlag(sender,true)
+            else -> getCamera(label).setTitleFlag(sender,false)
+        }
+    }
     // ヘルプメッセージ
     private fun showHelp(label:String,sender: CommandSender){
         sender.sendMessage("§b====================[Man10 Camera System]====================")
@@ -273,15 +303,17 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§b[動作モード制御]")
         sender.sendMessage("§a/$label follow (player)    プレイヤーを追跡する")
         sender.sendMessage("§a/$label rotate (player)    プレイヤーの周りをまわる")
-        sender.sendMessage("§a/$label spectate (player)  対象の視点を見る(スペクテーター専用)")
+        sender.sendMessage("§a/$label spectate (player)  対象のプレイヤーの視点を見る(スペクテーター)")
         sender.sendMessage("§a/$label clone (player)     対象プレーヤーの状態をクローンする")
         sender.sendMessage("§a/$label back (player)      対象プレーヤーの背後につく(左右だけ向く)")
-        sender.sendMessage("§a/$label backview (player)   対象プレーヤーの背後から視線を合わせる")
+        sender.sendMessage("§a/$label backview (player)  対象プレーヤーの背後から視線を合わせる")
+        sender.sendMessage("§a/$label look (player)      停止して対象プレイヤーに注視する")
         sender.sendMessage("§a/$label tp (player/loc(world,x,y,z[,yaw,pitch])  指定位置へテレポート")
         sender.sendMessage("§a/$label title (タイトルメッセージ) サブタイトル [秒数]")
         sender.sendMessage("§a/$label text (アクションテキスト) [秒数]")
-
         sender.sendMessage("§a/$label stop               停止")
+
+        sender.sendMessage("§b[全体制御]")
         sender.sendMessage("§a/$label auto              　自動モード切替")
         sender.sendMessage("§a/$label switch              自動運転のターゲットを切替")
         sender.sendMessage("§a/$label server [サーバ名]    転送先サーバ名")
@@ -293,7 +325,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label set radius [r]            プレイヤーの周りを回る半径を指定")
         sender.sendMessage("§a/$label set height [h]            カメラの高さを指定")
         sender.sendMessage("§a/$label set nightvision [on/off]  ナイトビジョン")
-        sender.sendMessage("§a/$label set broadcast [on/off]    通知メッセージの全体通知on/off")
+        sender.sendMessage("§a/$label set title [on/off]        タイトルテキストのon/off")
         sender.sendMessage("§a/$label set message [on/off]      個人通知メッセージ")
         sender.sendMessage("§b[表示モード設定]")
         sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
@@ -349,7 +381,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
 
     private fun onTabSet(args: Array<out String>?) : List<String>?{
         if(args?.size == 2)
-            return listOf("target","camera","position","radius","height","nightvision","notification","broadcast")
+            return listOf("target","camera","position","radius","height","nightvision","notification","title")
         return null
     }
 
