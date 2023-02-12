@@ -9,7 +9,6 @@ import org.bukkit.inventory.ItemStack
 import red.man10.camera.Main
 import red.man10.camera.info
 import java.io.File
-import java.io.IOException
 
 class Kit {
 
@@ -29,6 +28,42 @@ class Kit {
                 error("キットの保存に失敗した" + exception.message)
             }
         }
+        return true
+    }
+
+    //      キットを読み込む
+    fun load(p: Player, kitName: String): Boolean {
+        val userdata =
+            File(Bukkit.getServer().pluginManager.getPlugin("Kit")!!.dataFolder, File.separator + "Kits")
+        val f = File(userdata, File.separator + kitName + ".yml")
+        val data: FileConfiguration = YamlConfiguration.loadConfiguration(f)
+        if (!f.exists()) {
+            p.sendMessage("キットは存在しない:$kitName")
+            return false
+        }
+        val inv = data["inventory"]
+        val arm = data["armor"]
+        if (inv == null || arm == null) {
+            error("保存されたインベントリがない$kitName")
+            return true
+        }
+        var inventory: Array<ItemStack?>? = null
+        var armor: Array<ItemStack?>? = null
+
+        if (inv is Array<*> && inv.isArrayOf<ItemStack>()) {
+            inventory = inv as Array<ItemStack?>?
+        } else if (inv is List<*>) {
+            inventory = inv.toTypedArray() as Array<ItemStack?>
+        }
+        if (arm is Array<*> && arm.isArrayOf<ItemStack>()) {
+            armor = arm as Array<ItemStack?>?
+        } else if (arm is List<*>) {
+            armor = arm.toTypedArray() as Array<ItemStack?>
+        }
+        p.inventory.clear()
+        p.inventory.setContents(inventory as Array<out ItemStack>?)
+        p.inventory.setArmorContents(armor)
+        info( "${kitName}キットを装備しました",p)
         return true
     }
 
@@ -56,40 +91,6 @@ class Kit {
         return true
     }
 
-    //      キットを読み込む
-    fun load(p: Player, kitName: String): Boolean {
-        val userdata =
-            File(Bukkit.getServer().pluginManager.getPlugin("Kit")!!.dataFolder, File.separator + "Kits")
-        val f = File(userdata, File.separator + kitName + ".yml")
-        val data: FileConfiguration = YamlConfiguration.loadConfiguration(f)
-        if (!f.exists()) {
-            p.sendMessage("キットは存在しない:$kitName")
-            return false
-        }
-        val a = data["inventory"]
-        val b = data["armor"]
-        if (a == null || b == null) {
-            error("保存されたインベントリがない$kitName")
-            return true
-        }
-        var inventory: Array<ItemStack?>? = null
-        var armor: Array<ItemStack?>? = null
-        if (a is Array<*> && a.isArrayOf<ItemStack>()) {
-            inventory = a as Array<ItemStack?>?
-        } else if (a is List<*>) {
-            inventory = a.toTypedArray() as Array<ItemStack?>
-        }
-        if (b is Array<*> && b.isArrayOf<ItemStack>()) {
-            armor = b as Array<ItemStack?>?
-        } else if (b is List<*>) {
-            armor = b.toTypedArray() as Array<ItemStack?>
-        }
-        p.inventory.clear()
-        p.inventory.setContents(inventory as Array<out ItemStack>?)
-        p.inventory.setArmorContents(armor)
-        info( "${kitName}キットを装備しました",p)
-        return true
-    }
 
 
 
