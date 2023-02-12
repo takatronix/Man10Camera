@@ -15,6 +15,7 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
+import red.man10.kit.Kit
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
@@ -37,9 +38,11 @@ class Main : JavaPlugin() ,Listener {
         var mc2= CameraThread()
         var mc3= CameraThread()
         var mc4= CameraThread()
+
+        var kit = Kit()
+
         // プレイヤーの統計データ
         var playerMap = ConcurrentHashMap<UUID, PlayerData>()
-
         var autoTask = false
         var running = true                      // スレッド終了フラグ
         var taskSwitchTime = 60                 // タスク切替タイミング
