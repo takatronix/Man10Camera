@@ -2,11 +2,15 @@ package red.man10.camera
 
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Location
+import org.bukkit.World
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.*
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 
 
 object Command : CommandExecutor, TabCompleter {
@@ -28,8 +32,11 @@ object Command : CommandExecutor, TabCompleter {
             "live" -> youtube(label,sender)
             "set" -> set(label,sender,args)
             "follow" -> follow(label,sender,args)
+            "back" -> back(label,sender,args)
+            "backview" -> backView(label,sender,args)
             "rotate" -> rotate(label,sender,args)
             "clone" -> clone(label,sender,args)
+            "tp" -> tp(label,sender,args)
             "stop" -> stop(label,sender,args)
             "spectate" -> spectate(label,sender,args)
             "show" -> getCamera(label).show(sender)
@@ -61,8 +68,53 @@ object Command : CommandExecutor, TabCompleter {
     private fun follow(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).follow(sender, onlinePlayer(sender,args))
     }
+    private fun back(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).back(sender, onlinePlayer(sender,args))
+    }
+    private fun backView(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).backView(sender, onlinePlayer(sender,args))
+    }
     private fun clone(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).clone(sender, onlinePlayer(sender,args))
+    }
+    private fun tp(label:String,sender: CommandSender,args: Array<out String>){
+        if(args.size > 3 || args.size < 1 ){
+            error("コマンドエラー: -> tp (player / w,x,y,z(yaw,pitch)" ,sender)
+            return
+        }
+
+        if(args.size == 2){
+            val player = Bukkit.getPlayer(args[1])
+            if(player != null) {
+                getCamera(label).cameraPlayer!!.teleport(player.location)
+                return
+            }
+        }
+        val wxyzyp= args[1].split(",")
+        if(wxyzyp.size <= 4){
+            error("コマンドエラー: -> tp (player / w,x,y,z(yaw,pitch)" ,sender)
+            return
+        }
+
+        // カメラを停止し、遅延後、TPを行う
+        getCamera(label).changeMode(CameraMode.STOP)
+
+        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            val w = wxyzyp[0]
+            val x = wxyzyp[1].toDouble()
+            val y = wxyzyp[2].toDouble()
+            val z = wxyzyp[3].toDouble()
+            var pitch = 0.0f
+            var yaw = 0.0f
+            if(wxyzyp.size >= 5)
+                yaw = wxyzyp[4].toFloat()
+            if(wxyzyp.size >= 6)
+                pitch = wxyzyp[5].toFloat()
+            val loc = Location(Bukkit.getWorld(w),x,y,z,yaw,pitch)
+            getCamera(label).cameraPlayer!!.teleport(loc)
+        })
+
+
     }
     private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).rotate(sender, onlinePlayer(sender,args))
@@ -113,7 +165,6 @@ object Command : CommandExecutor, TabCompleter {
         when(key){
             "target" -> getCamera(label).setTarget(sender,name)
             "camera" -> getCamera(label).setCamera(sender,name)
-            "camera1" -> getCamera(label).setCamera(sender,name)
             "position" -> setPosition(label,sender,name)
             "radius" -> setRadius(label,sender,name)
             "height" -> setHeight(label,sender,name)
@@ -222,12 +273,18 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§b[動作モード制御]")
         sender.sendMessage("§a/$label follow (player)    プレイヤーを追跡する")
         sender.sendMessage("§a/$label rotate (player)    プレイヤーの周りをまわる")
-        sender.sendMessage("§a/$label spectate (player) 対象の視点を見る(スペクテーター専用)")
+        sender.sendMessage("§a/$label spectate (player)  対象の視点を見る(スペクテーター専用)")
+        sender.sendMessage("§a/$label clone (player)     対象プレーヤーの状態をクローンする")
+        sender.sendMessage("§a/$label back (player)      対象プレーヤーの背後につく(左右だけ向く)")
+        sender.sendMessage("§a/$label backview (player)   対象プレーヤーの背後から視線を合わせる")
+        sender.sendMessage("§a/$label tp (player/loc(world,x,y,z[,yaw,pitch])  指定位置へテレポート")
+        sender.sendMessage("§a/$label title (タイトルメッセージ) サブタイトル [秒数]")
+        sender.sendMessage("§a/$label text (アクションテキスト) [秒数]")
+
         sender.sendMessage("§a/$label stop               停止")
         sender.sendMessage("§a/$label auto              　自動モード切替")
         sender.sendMessage("§a/$label switch              自動運転のターゲットを切替")
         sender.sendMessage("§a/$label server [サーバ名]    転送先サーバ名")
-
 
         sender.sendMessage("§b[設定コマンド]設定は保存されます")
         sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
@@ -246,24 +303,26 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§b[宣伝系]")
         sender.sendMessage("§a/$label live      　　　ライブ配信の告知")
 
-        sender.sendMessage("§b[開発中]")
-        sender.sendMessage("§a/$label teleport [x,y,z] or(player)    特定の座標にカメラを移動する")
-        sender.sendMessage("§a/$label look     [x,y,z]or[Player] 　　特定の座標を見る")
+        /*
+sender.sendMessage("§b[開発中]")
+sender.sendMessage("§a/$label teleport [x,y,z] or(player)    特定の座標にカメラを移動する")
+sender.sendMessage("§a/$label look     [x,y,z]or[Player] 　　特定の座標を見る")
 
-        sender.sendMessage("[§bカメラファイル](未完成)")
-        sender.sendMessage("§a/$label camera files                     カメラ設定一覧" )
-        sender.sendMessage("§a/$label camera select [カメラ設定ファイル]  カメラ設定選択 ")
-        sender.sendMessage("§a/$label camera delete [カメラ設定ファイル]  カメラ設定削除 ")
+sender.sendMessage("[§bカメラファイル](未完成)")
+sender.sendMessage("§a/$label camera files                     カメラ設定一覧" )
+sender.sendMessage("§a/$label camera select [カメラ設定ファイル]  カメラ設定選択 ")
+sender.sendMessage("§a/$label camera delete [カメラ設定ファイル]  カメラ設定削除 ")
 
-        sender.sendMessage("[§b位置ファイル選択] （開発中)")
-        sender.sendMessage("§a/$label location files               位置ファイル一覧")
-        sender.sendMessage("§a/$label location select [ファイル名]   位置ファイル選択")
-        sender.sendMessage("§a/$label location delete [ファイル名]   位置ファイル削除")
-        sender.sendMessage("[§b位置情報編集] (位置ファイル選択後有効)")
-        sender.sendMessage("§a/$label location list                登録位置リストを表示")
-        sender.sendMessage("§a/$label location add [位置名]         現在位置を登録する")
-        sender.sendMessage("§a/$label location delete [位置名]      登録位置を削除する")
 
+sender.sendMessage("[§b位置ファイル選択] （開発中)")
+sender.sendMessage("§a/$label location files               位置ファイル一覧")
+sender.sendMessage("§a/$label location select [ファイル名]   位置ファイル選択")
+sender.sendMessage("§a/$label location delete [ファイル名]   位置ファイル削除")
+sender.sendMessage("[§b位置情報編集] (位置ファイル選択後有効)")
+sender.sendMessage("§a/$label location list                登録位置リストを表示")
+sender.sendMessage("§a/$label location add [位置名]         現在位置を登録する")
+sender.sendMessage("§a/$label location delete [位置名]      登録位置を削除する")
+*/
         sender.sendMessage("§b=======[Author: takatronix /  https://man10.red]=============")
     }
     private fun youtube(label:String,sender: CommandSender){
@@ -279,7 +338,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","look","spectate","stop","show","showbody","hide","live","auto","server","switch")
+            return listOf("set","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch")
         }
 
         when(args?.get(0)){

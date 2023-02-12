@@ -20,6 +20,12 @@ import java.io.IOException
 fun sendTitleText(player:Player,title:String,subtitle:String="",fadeIn:Int = 10,stay:Int=100,fadeOut:Int = 10){
     player.sendTitle(title,subtitle,fadeIn,stay,fadeOut)
 }
+fun sendTitleText(player:Player,title:String,subtitle:String="",keepSec:Double = 2.0){
+    val time = 20.0*keepSec
+    player.sendTitle(title,subtitle,10,time.toInt(),10)
+}
+
+
 fun sendActionText(player:Player?,message:String?){
     if(message.isNullOrEmpty())
         return

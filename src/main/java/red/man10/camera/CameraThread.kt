@@ -24,6 +24,8 @@ enum class CameraMode{
     FOLLOW,                     // 追跡
     ROTATE,                     // 周囲を回る
     CLONE,                      // インベントリの同期
+    BACK,                       // 背後（左右だけあわせる）
+    BACKVIEW,                   // 背後から視線も合わせる
 }
 // カメラの表示モード
 enum class VisibleMode {
@@ -44,12 +46,13 @@ class CameraThread : Thread() {
     //endregion
     //region 設定
     private var autoTarget:Boolean = true       // ターゲットを見失ったとき
-    private var radius:Double = 10.0            // 回転半径
+    private var radius:Double = 5.0            // 回転半径
+    private var height:Double = 2.0
     private var angleStep = 0.08                // 回転速度
     private var nightVision = false             // 暗視設定
    // private var broadcast = true                // 配信を全体に通知するか
     private var notification = true             // 配信を個人に通知するか
-    private var relativePos:Vector= Vector(2.0,2.0,0.0)    // カメラの相対位置
+    private var relativePos:Vector= Vector(5.0,2.0,0.0)    // カメラの相対位置
     private var cameraMode:CameraMode = CameraMode.AUTO              // 動作モード
     private var visibleMode:VisibleMode = VisibleMode.SHOW           // 表示モード
     //endregion
@@ -126,6 +129,8 @@ class CameraThread : Thread() {
                 CameraMode.ROTATE -> onRotateMode()
                 CameraMode.LOOK -> onSpectatorMode()
                 CameraMode.CLONE -> onCloneMode()
+                CameraMode.BACK -> onBackMode()
+                CameraMode.BACKVIEW -> onBackViewMode()
                 else-> onStopMode()
             }
             workingCounter++
@@ -161,9 +166,8 @@ class CameraThread : Thread() {
             Main.taskSwitchCount = 0
         }
     }
-
-    fun changeGameMode(mode:GameMode){
-
+    public fun changeMode(mode:CameraMode){
+        cameraMode = mode
     }
 
     // スレッドが動作可能か？
@@ -271,9 +275,68 @@ class CameraThread : Thread() {
             target = player.uniqueId
         }
 
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.y = 0.0
+        vec.normalize()
+        vec.multiply(-1 * radius)
+        vec.y = height
+
+        this.relativePos = vec
+
         showCamera();
 
+
         info("${player!!.name}をフォローモードに設定",sender)
+        notifyUsers(Main.liveMessage,sender,player)
+        sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+    }
+    fun back(sender: CommandSender?,player:Player? = null){
+        target = player?.uniqueId
+        if(!canStart(sender))
+            return
+
+        setMode(sender,CameraMode.BACK)
+        if(player?.isOnline == true){
+            target = player.uniqueId
+        }
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.y = 0.0
+        vec.normalize()
+        vec.multiply(-1 * radius)
+        vec.y = height
+        this.relativePos = vec
+
+        showCamera();
+
+
+        info("${player!!.name}を背後モードに設定",sender)
+        notifyUsers(Main.liveMessage,sender,player)
+        sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+    }
+    fun backView(sender: CommandSender?,player:Player? = null){
+        target = player?.uniqueId
+        if(!canStart(sender))
+            return
+
+        setMode(sender,CameraMode.BACKVIEW)
+        if(player?.isOnline == true){
+            target = player.uniqueId
+        }
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.normalize()
+        vec.multiply(-1 * radius)
+        vec.y = height
+        this.relativePos = vec
+
+        showCamera();
+
+
+        info("${player!!.name}を背後Viewモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
         sendTitleText(cameraPlayer!!,"§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
@@ -297,11 +360,17 @@ class CameraThread : Thread() {
 
     fun showCamera(){
         Bukkit.getOnlinePlayers().forEach { p ->
-            p.hidePlayer(Main.plugin,cameraPlayer!!)
+            p.showPlayer(Main.plugin,cameraPlayer!!)
             cameraPlayer?.showPlayer(Main.plugin,p)
         }
     }
 
+    fun hideCamera(){
+        Bukkit.getOnlinePlayers().forEach { p ->
+            p.hidePlayer(Main.plugin,cameraPlayer!!)
+            cameraPlayer?.hidePlayer(Main.plugin,p)
+        }
+    }
     fun spectate(sender: CommandSender?, player:Player? = null){
         target = player?.uniqueId
         setMode(sender,CameraMode.SPECTATOR,targetPlayer)
@@ -360,6 +429,7 @@ class CameraThread : Thread() {
 
     // 高さの設定
     fun setHeight(sender: CommandSender,h:Double){
+        height = h
         relativePos.y = h
         save(sender)
     }
@@ -400,7 +470,7 @@ class CameraThread : Thread() {
             }
             if(retarget){
 
-                info("すぺくてーたモード中にカメラから距離がはなれたため、スペクテーター解除されたと判断")
+                info("スペクテーターモード中にカメラから距離がはなれたため、スペクテーター解除されたと判断")
                 camera.gameMode = GameMode.CREATIVE
                 camera.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,10,true,false))
                 camera.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,10,true,false))
@@ -427,6 +497,39 @@ class CameraThread : Thread() {
         lookAt(targetPos)
     }
     private fun onFollowMode(){
+        // ターゲットの相対位置のカメラ位置
+        val loc = targetPlayer?.location?.add(relativePos)
+        val pos = loc?.toVector()
+        val dir = targetPos?.subtract(pos!!)
+        loc?.direction = dir!!
+        teleport(loc)
+    }
+    private fun onBackMode(){
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.y = 0.0
+        vec.normalize()
+        vec.multiply(-1 * radius)
+        vec.y = height
+        this.relativePos = vec
+
+        // ターゲットの相対位置のカメラ位置
+        val loc = targetPlayer?.location?.add(relativePos)
+        val pos = loc?.toVector()
+        val dir = targetPos?.subtract(pos!!)
+        loc?.direction = dir!!
+        teleport(loc)
+    }
+    private fun onBackViewMode(){
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.normalize()
+        vec.multiply(-1 * radius)
+        vec.y = height
+        this.relativePos = vec
+
         // ターゲットの相対位置のカメラ位置
         val loc = targetPlayer?.location?.add(relativePos)
         val pos = loc?.toVector()
@@ -470,12 +573,14 @@ class CameraThread : Thread() {
         visibleMode = VisibleMode.HIDE
     }
     fun show(sender:CommandSender?){
+        showCamera()
         val camera = cameraPlayer
         camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,10,true,false))
         camera?.gameMode = GameMode.CREATIVE
         visibleMode = VisibleMode.SHOW
     }
     fun showBody(sender:CommandSender?){
+        showCamera()
         val camera = cameraPlayer
         camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
         camera?.gameMode = GameMode.CREATIVE
@@ -545,6 +650,7 @@ class CameraThread : Thread() {
             config["visibleMode"] = visibleMode.toString()
             config["gameMode"] = cameraPlayer?.gameMode.toString()
             config["radius"] = radius
+            config["height"] = height
             config["nightVision"] = nightVision
             config["notification"] = notification
             config.save(file)
@@ -570,12 +676,15 @@ class CameraThread : Thread() {
             s = config.getString("camera",null)
             if(s != null) camera = UUID.fromString(s)
 
+//            relativePos = config["relativePos"]
+
             cameraMode = enumValueOf(config["cameraMode"].toString())
             visibleMode = enumValueOf(config["visibleMode"].toString())
             nightVision = config.getBoolean("nightVision",true)
             notification = config.getBoolean("notification",true)
             // 回転半径
-            radius = config.getDouble("radius",2.0)
+            radius = config.getDouble("radius",5.0)
+            height = config.getDouble("height",2.0)
 
             val gameMode = enumValueOf<GameMode>(config["gameMode"].toString())
             cameraPlayer?.gameMode = gameMode
