@@ -12,6 +12,7 @@ import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
 
+
 //region 定義
 // カメラの動作モード
 enum class CameraMode{
@@ -174,9 +175,19 @@ class CameraThread : Thread() {
             cameraPlayer?.sendTitle(title,subtitle,fadeIn,stay,fadeOut)
     }
     fun sendTitle(title:String, subtitle:String="",time:Double = 3.0){
-        val tick = time * 20
-        cameraPlayer?.sendTitle(title.replace("&","§"),subtitle.replace("&","§"),10,tick.toInt(),10)
+        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            val tick = time * 20
+            cameraPlayer?.sendTitle(title.replace("&","§"),subtitle.replace("&","§"),10,tick.toInt(),10)
+        })
     }
+    fun sendText(text:String,time:Double = 3.0){
+
+        this.actionText = text.replace("&","§")
+        val tick = time * 20
+        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable { actionText = ""}, tick.toLong())
+    }
+
+
     // スレッドが動作可能か？
     fun canWork() :Boolean{
         when(cameraMode){

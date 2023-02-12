@@ -44,7 +44,7 @@ object Command : CommandExecutor, TabCompleter {
             "showbody" -> getCamera(label).showBody(sender)
             "hide" -> getCamera(label).hide(sender)
             "title" -> title(label,sender,args)
-           // "text" -> text(label,sender,args)
+            "text" -> text(label,sender,args)
             "auto" -> {
                 Main.commandSender = sender
                 Main.autoTask = Main.autoTask != true
@@ -134,11 +134,19 @@ object Command : CommandExecutor, TabCompleter {
         if(args.size >= 4)
              time = args[3].toDouble()
         getCamera(label).sendTitle(title,sub,time)
-
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
-
-        })
+   }
+    private fun text(label:String,sender: CommandSender,args: Array<out String>){
+        if(args.size < 2){
+            error("コマンドエラー: -> title [title ] [subtitle] [time=3.0])" ,sender)
+            return
+        }
+        var text = args[1]
+        var time = 2.0
+        if(args.size >= 3)
+            time = args[2].toDouble()
+        getCamera(label).sendText(text,time)
     }
+
     private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).rotate(sender, onlinePlayer(sender,args))
     }
@@ -314,9 +322,9 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label stop               停止")
 
         sender.sendMessage("§b[全体制御]")
-        sender.sendMessage("§a/$label auto              　自動モード切替")
-        sender.sendMessage("§a/$label switch              自動運転のターゲットを切替")
-        sender.sendMessage("§a/$label server [サーバ名]    転送先サーバ名")
+        sender.sendMessage("§a/$label auto              自動モード切替")
+        sender.sendMessage("§a/$label switch            自動運転のターゲットを切替")
+        sender.sendMessage("§a/$label server [サーバ名]   転送先サーバ名")
 
         sender.sendMessage("§b[設定コマンド]設定は保存されます")
         sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
@@ -333,7 +341,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
 
         sender.sendMessage("§b[宣伝系]")
-        sender.sendMessage("§a/$label live      　　　ライブ配信の告知")
+        sender.sendMessage("§a/$label live       ライブ配信の告知")
 
         /*
 sender.sendMessage("§b[開発中]")
