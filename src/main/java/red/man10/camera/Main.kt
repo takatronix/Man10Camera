@@ -45,8 +45,8 @@ class Main : JavaPlugin() ,Listener {
         var playerMap = ConcurrentHashMap<UUID, PlayerData>()
         var autoTask = false
         var running = true                      // スレッド終了フラグ
-        var taskSwitchTime = 60                 // タスク切替タイミング
-        var taskSwitchCount = 60                // 減算していき０になったらスイッチする
+        var taskSwitchTime = 30                 // タスク切替タイミング
+        var taskSwitchCount = 30                // 減算していき０になったらスイッチする
         var broadcast:Boolean = false
         var serverName:String? = null           // サーバ名
         //var config: FileConfiguration
@@ -112,11 +112,12 @@ class Main : JavaPlugin() ,Listener {
             info("camera1がいないため自動処理は停止")
             return
         }
+        /*
         if(getCamera(2).cameraPlayer == null){
             info("camera2がいないため自動処理は停止")
             return
         }
-
+*/
         // アクティブなプレイヤー順にソート
         var list = playerMap.toList().sortedByDescending { it.second.updateTime }
         var activeList:MutableList<PlayerData>  = mutableListOf()
@@ -138,7 +139,7 @@ class Main : JavaPlugin() ,Listener {
             info("切替対象なし")
             return
         }
-        info("アクティブなプレイヤー数:${activeList.size}")
+     //   info("アクティブなプレイヤー数:${activeList.size}")
         activeList.shuffle()
 
         // 次の表示対象
@@ -146,10 +147,10 @@ class Main : JavaPlugin() ,Listener {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             if (player != null) {
                 sendBungeeMessage(commandSender!!," &a&l"+ player.name + bungeeLiveMessage)
-                getCamera(1).rotate(null,player)
-                getCamera(2).spectate(null,player)
-                val text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
-                getCamera(1).actionText = text
+                getCamera(1).clone(null,player)
+                //getCamera(2).spectate(null,player)
+             //   val text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
+               // getCamera(1).actionText = text
             }
         })
 

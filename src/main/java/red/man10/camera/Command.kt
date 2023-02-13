@@ -202,7 +202,6 @@ object Command : CommandExecutor, TabCompleter {
             "nightvision" -> setNightVision(label,sender,name)
             "notification" -> setNotification(label,sender,name)
             "title" -> setTitleFlag(label,sender,name)
-
         }
     }
     private fun setPosition(label:String,sender: CommandSender,value:String){

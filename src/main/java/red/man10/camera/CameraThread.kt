@@ -354,7 +354,7 @@ class CameraThread : Thread() {
 
         info("${player!!.name}を背後Viewモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
-      //  sendTitleText("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+        showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
     fun clone(sender: CommandSender?,player:Player? = null){
         target = player?.uniqueId
@@ -371,8 +371,7 @@ class CameraThread : Thread() {
         cameraPlayer?.hidePlayer(Main.plugin,targetPlayer!!)
         info("${player!!.name}をクローンモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
-
-      //  sendTitleText("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+        showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
 
     fun showCamera(){
@@ -487,7 +486,6 @@ class CameraThread : Thread() {
                 retarget = true
             }
             if(retarget){
-
                 info("スペクテーターモード中にカメラから距離がはなれたため、スペクテーター解除されたと判断")
                 camera.gameMode = GameMode.CREATIVE
                 camera.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,10,true,false))
