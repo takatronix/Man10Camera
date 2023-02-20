@@ -147,8 +147,9 @@ class Main : JavaPlugin() ,Listener {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             if (player != null) {
                 sendBungeeMessage(commandSender!!," &a&l"+ player.name + bungeeLiveMessage)
-                getCamera(1).clone(null,player)
-                //getCamera(2).spectate(null,player)
+               // getCamera(1).clone(null,player)
+                getCamera(1).backView(null,player)
+                getCamera(2).spectate(null,player)
              //   val text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
                // getCamera(1).actionText = text
             }
