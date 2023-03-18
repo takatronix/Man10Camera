@@ -45,17 +45,20 @@ class Main : JavaPlugin() ,Listener {
         var playerMap = ConcurrentHashMap<UUID, PlayerData>()
         var autoTask = false
         var running = true                      // スレッド終了フラグ
-        var taskSwitchTime = 30                 // タスク切替タイミング
         var taskSwitchCount = 30                // 減算していき０になったらスイッチする
-        var broadcast:Boolean = false
-        var serverName:String? = null           // サーバ名
-        //var config: FileConfiguration
+
+
+        lateinit var configData: ConfigData
+
     }
 
     override fun onEnable() {
         plugin = this
         saveDefaultConfig()
-        load()
+        configData = loadConfigData(config)
+        showConfigData()
+
+        this.config.set("key","aaa")
         // カメラスレッド生成
         for(no in 1..cameraCount){
             val label = "mc$no"
@@ -79,7 +82,7 @@ class Main : JavaPlugin() ,Listener {
                 Thread.sleep(1000)
                 taskSwitchCount --
                 if(taskSwitchCount <= 0){
-                    taskSwitchCount = taskSwitchTime
+                    taskSwitchCount = configData.switchTime
                     if(autoTask)
                         autoCameraTask()
                 }
@@ -149,7 +152,7 @@ class Main : JavaPlugin() ,Listener {
                 sendBungeeMessage(commandSender!!," &a&l"+ player.name + bungeeLiveMessage)
                // getCamera(1).clone(null,player)
                 getCamera(1).backView(null,player)
-                getCamera(2).spectate(null,player)
+           //     getCamera(2).spectate(null,player)
              //   val text = "巡回中:${player.name} / Online:${Bukkit.getOnlinePlayers().count()} / Active:${activeList.size}"
                // getCamera(1).actionText = text
             }
@@ -312,13 +315,19 @@ private fun isTarget(player:Player?):Boolean{
 }
 //endregion
 
-private fun save(sender: CommandSender?=null): Boolean {
-
-    return true
+fun loadConfigData(config: FileConfiguration): ConfigData {
+    return ConfigData(
+        broadcast = config.getBoolean("broadcast", false),
+        switchTime = config.getInt("switchTime",30)
+    )
 }
-
-fun load(sender: CommandSender? = null): Boolean {
-
-    return true
+fun saveConfigData(configData: ConfigData) {
+    Main.plugin.config.set("broadcast", configData.broadcast)
+    Main.plugin.config.set("switchTime",configData.switchTime)
+    Main.plugin.saveConfig()
+    showConfigData()
 }
-
+fun showConfigData(sender:CommandSender? = null){
+    info("broadcast:${Main.configData.broadcast}")
+    info("switchTime:${Main.configData.switchTime}")
+}

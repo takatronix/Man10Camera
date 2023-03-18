@@ -251,7 +251,7 @@ class CameraThread : Thread() {
             run {
                 if(target == null)
                     return
-                if(Main.broadcast)
+                if(Main.configData.broadcast)
                     p.sendMessage("§e§l"+cameraName+" §a§l"+ target.name +message)
                 else{
                     if(notificationFlag && target == p)
@@ -700,9 +700,6 @@ class CameraThread : Thread() {
             // camera UUID
             s = config.getString("camera",null)
             if(s != null) camera = UUID.fromString(s)
-
-//            relativePos = config["relativePos"]
-
             cameraMode = enumValueOf(config["cameraMode"].toString())
             visibleMode = enumValueOf(config["visibleMode"].toString())
             nightVisionFlag = config.getBoolean("nightVisionFlag",true)

@@ -31,6 +31,7 @@ object Command : CommandExecutor, TabCompleter {
             "help" -> showHelp(label,sender)
             "live" -> youtube(label,sender)
             "set" -> set(label,sender,args)
+            "config" -> config(label,sender,args)
             "follow" -> follow(label,sender,args)
             "back" -> back(label,sender,args)
             "backview" -> backView(label,sender,args)
@@ -54,7 +55,7 @@ object Command : CommandExecutor, TabCompleter {
             "server" -> server(label,sender,args)
             "test" -> test(label,sender,args)
             "switch" -> {Main.taskSwitchCount = 0}
-            "baordcast" -> setBroadcast(label,sender,args)
+
         }
 
         return false
@@ -156,18 +157,7 @@ object Command : CommandExecutor, TabCompleter {
     private fun stop(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).stop(sender, onlinePlayer(sender,args))
     }
-    private fun setBroadcast(label:String,sender: CommandSender,args: Array<out String>){
-        if(args.size > 3 || args.size < 1 ){
-            error("コマンドエラー: -> set broadcast 'on/off'" ,sender)
-            return
-        }
-        // baordcast
-        if(args.size == 3){
 
-        }
-
-        getCamera(label).rotate(sender, onlinePlayer(sender,args))
-    }
 
     private fun server(label:String, sender: CommandSender, args: Array<out String>){
         if(args.size != 2){
@@ -203,6 +193,23 @@ object Command : CommandExecutor, TabCompleter {
             "notification" -> setNotification(label,sender,name)
             "title" -> setTitleFlag(label,sender,name)
         }
+    }
+
+    // 共通config
+    private fun config(label:String,sender: CommandSender,args: Array<out String>){
+
+        if(args.size != 3){
+            showHelp(label,sender)
+            return
+        }
+
+        val key = args[1]
+        val value = args[2]
+        when(key){
+            "broadcast" -> Main.configData.broadcast = value == "on"
+        }
+        saveConfigData(Main.configData)
+        sender.sendMessage("$key->$value saved")
     }
     private fun setPosition(label:String,sender: CommandSender,value:String){
         val xyz= value.split(",")
@@ -297,7 +304,12 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label switch            自動運転のターゲットを切替")
         sender.sendMessage("§a/$label server [サーバ名]   転送先サーバ名")
 
-        sender.sendMessage("§b[設定コマンド]設定は保存されます")
+        sender.sendMessage("§b[共通設定]")
+        sender.sendMessage("§a/$label config broadcast [on/off]")
+
+
+
+        sender.sendMessage("§b[カメラ別設定コマンド]設定は保存されます")
         sender.sendMessage("§a/$label set target [player]       監視対象を設定する")
         sender.sendMessage("§a/$label set camera [player]       カメラプレイヤーを設定する")
         sender.sendMessage("§a/$label set position [x,y,z]      監視対象に対する相対位置を指定")
@@ -349,11 +361,12 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch")
+            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch","broadcast")
         }
 
         when(args?.get(0)){
             "set" -> return onTabSet(args)
+            "config" -> return onTabConfig(args)
         }
         return null
     }
@@ -363,14 +376,18 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             return listOf("target","camera","position","radius","height","nightvision","notification","title")
         return null
     }
+    private fun onTabConfig(args: Array<out String>?) : List<String>?{
+        if(args?.size == 2)
+            return listOf("broadcast")
+        return null
+    }
 
 
     //
     /*
-    fun onCommand(
-        @NotNull sender: CommandSender,
-        @NotNull command: Command?,
-        @NotNull label: String?,
+    fun onCommand(sender: CommandSender, command: Command?,
+        @NotNull label: Swww
+                  tring?,
         @NotNull args: Array<String>
     ): Boolean {
         val p: Player?
@@ -383,11 +400,16 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         } else {
             p = sender as Player
         }
+
+        /*
         if (playerInVision.contains(p.uniqueId)) {
             sender.sendMessage(Man10Raid.prefix + "§c§lプレイヤーはすでにエフェクト付与中です")
             return false
         }
         playerInVision.add(p!!.uniqueId)
+        */
+
+
         var view: Monster? = null
         if (args[2].equals("creeper", ignoreCase = true)) view =
             p.world.spawnEntity(p.location, EntityType.CREEPER) as Creeper
