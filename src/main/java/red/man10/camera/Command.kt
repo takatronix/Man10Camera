@@ -349,19 +349,17 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         sender.sendMessage("§b=======[Author: takatronix /  https://man10.red]=============")
     }
     private fun youtube(label:String,sender: CommandSender){
-
-        sendBungeeMessage(sender,Main.youtubeMessage)
-        /*
-        Bukkit.getOnlinePlayers().forEach {
-            player -> player.sendMessage(Main.broadcastMessage)
-        }*/
+        if(Main.configData.broadcast)
+            sendBungeeMessage(sender,Main.youtubeMessage)
+        else
+            info("broadcastオフのためメッセージを出さない",sender)
     }
 
     // タブ補完
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch","broadcast")
+            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch")
         }
 
         when(args?.get(0)){
