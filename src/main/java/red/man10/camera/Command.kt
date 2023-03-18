@@ -207,6 +207,7 @@ object Command : CommandExecutor, TabCompleter {
         val value = args[2]
         when(key){
             "broadcast" -> Main.configData.broadcast = value == "on"
+            "switchTime"-> Main.configData.switchTime = value.toInt()
         }
         saveConfigData(Main.configData)
         sender.sendMessage("$key->$value saved")
@@ -376,7 +377,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     }
     private fun onTabConfig(args: Array<out String>?) : List<String>?{
         if(args?.size == 2)
-            return listOf("broadcast")
+            return listOf("broadcast","switchTime")
         return null
     }
 

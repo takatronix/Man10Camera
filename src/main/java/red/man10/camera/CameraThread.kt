@@ -225,10 +225,14 @@ class CameraThread : Thread() {
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
             if(mode == CameraMode.CLONE){
                 camera?.gameMode = GameMode.SURVIVAL
-            }else{
+            }
+            else if(mode == CameraMode.SPECTATOR){
                 camera?.gameMode = GameMode.CREATIVE
                 camera?.gameMode = GameMode.SPECTATOR
                 camera?.spectatorTarget = specTarget
+            }
+            else{
+                camera?.gameMode = GameMode.CREATIVE
             }
 
         })
