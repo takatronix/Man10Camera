@@ -1,7 +1,7 @@
 name: Man10Camera
 version: '1.0'
 main: red.man10.camera.Main
-api-version: 1.17
+api-version: 1.19
 prefix: MCS
 authors: [takatronix]
 description: Minecraft Camera System

@@ -11,6 +11,7 @@ import org.bukkit.command.TabCompleter
 import org.bukkit.entity.*
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import org.bukkit.util.Vector
 
 
 object Command : CommandExecutor, TabCompleter {
@@ -32,6 +33,8 @@ object Command : CommandExecutor, TabCompleter {
             "live" -> youtube(label,sender)
             "set" -> set(label,sender,args)
             "config" -> config(label,sender,args)
+            "vision" -> vision(label,sender,args)
+            "freeze" -> freeze(label,sender,args)
             "follow" -> follow(label,sender,args)
             "back" -> back(label,sender,args)
             "backview" -> backView(label,sender,args)
@@ -212,6 +215,44 @@ object Command : CommandExecutor, TabCompleter {
         saveConfigData(Main.configData)
         sender.sendMessage("$key->$value saved")
     }
+
+    private fun vision(label:String,sender: CommandSender,args: Array<out String>){
+        if(args.size != 4){
+            sender.sendMessage("$label vision [creeper/enderman/spider] mcid (秒)")
+            return
+        }
+
+        val mode = args[1]
+        val player = args[2]
+        val sec = args[3].toInt()
+
+        info("$mode,$player,$sec vision start")
+        setVision(sender,player,mode,sec)
+    }
+
+    private fun freeze(label:String,sender: CommandSender,args: Array<out String>){
+        info("${args.size}")
+        if(args.size <=2 || args.size>5){
+            sender.sendMessage("$label freeze プレイヤー メッセージ サブテキスト (秒数)")
+            return
+        }
+
+        val mcid = args[1]
+        val sec = args[2].toInt()
+        var message = ""
+        var subtext = ""
+        if(args.size >= 4)
+            message = args[3]
+        if(args.size >= 5)
+            subtext = args[4]
+
+        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            val tick = sec * 20
+            val p = Bukkit.getPlayer(mcid)
+            p?.sendTitle(message.replace("&","§"),subtext.replace("&","§"),10,tick.toInt(),10)
+        })
+        setVision(sender,mcid,"creeper",sec)
+    }
     private fun setPosition(label:String,sender: CommandSender,value:String){
         val xyz= value.split(",")
         if(xyz.size == 3){
@@ -305,6 +346,10 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label switch            自動運転のターゲットを切替")
         sender.sendMessage("§a/$label server [サーバ名]   転送先サーバ名")
 
+        sender.sendMessage("§a/$label vision [creeper/enderman/spider] [player] 秒数   プレイヤーの視界を切り替える")
+        sender.sendMessage("§a/$label freeze [player] 秒数 (メッセージ) (サブタイトル)")
+
+
         sender.sendMessage("§b[共通設定]")
         sender.sendMessage("§a/$label config broadcast [on/off]")
 
@@ -360,12 +405,13 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch")
+            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch","vision","freeze")
         }
 
         when(args?.get(0)){
             "set" -> return onTabSet(args)
             "config" -> return onTabConfig(args)
+            "vision" -> return onTabVision(args)
         }
         return null
     }
@@ -380,75 +426,65 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             return listOf("broadcast","switchTime")
         return null
     }
+    private fun onTabVision(args: Array<out String>?) : List<String>?{
+        if(args?.size == 2)
+            return listOf("creeper","enderman","spider")
+        return null
+    }
 
+    // 指定秒数間エフェクトをかける
+    // "creeper","enderman","spider"
+    fun setVision(sender:CommandSender,mcid:String,mode:String,sec:Int): Boolean {
 
-    //
-    /*
-    fun onCommand(sender: CommandSender, command: Command?,
-        @NotNull label: Swww
-                  tring?,
-        @NotNull args: Array<String>
-    ): Boolean {
-        val p: Player?
-        if (args.size == 4) {
-            p = Bukkit.getPlayer(args[3])
-            if (p == null || !p.isOnline || p.name != args[3]) {
-                sender.sendMessage(Man10Raid.prefix + "§c§lプレイヤーが存在しません")
-                return false
-            }
-        } else {
-            p = sender as Player
-        }
-
-        /*
-        if (playerInVision.contains(p.uniqueId)) {
-            sender.sendMessage(Man10Raid.prefix + "§c§lプレイヤーはすでにエフェクト付与中です")
+        info("setvistion")
+        val p: Player? = Bukkit.getPlayer(mcid)
+        if (p == null || !p.isOnline || p.name != mcid) {
+            error("プレイヤーが存在しない")
             return false
         }
-        playerInVision.add(p!!.uniqueId)
-        */
+
+        //var m = p.world.spawnEntity(p.location,EntityType.ZOMBIE)
 
 
         var view: Monster? = null
-        if (args[2].equals("creeper", ignoreCase = true)) view =
-            p.world.spawnEntity(p.location, EntityType.CREEPER) as Creeper
-        if (args[2].equals("enderman", ignoreCase = true)) view =
-            p.world.spawnEntity(p.location, EntityType.ENDERMAN) as Enderman
-        if (args[2].equals("spider", ignoreCase = true)) view =
-            p.world.spawnEntity(p.location, EntityType.SPIDER) as Spider
+        if (mode.equals("creeper", ignoreCase = true))
+            view = p.world.spawnEntity(p.location, EntityType.CREEPER) as Creeper
+        if (mode.equals("enderman", ignoreCase = true))
+            view = p.world.spawnEntity(p.location, EntityType.ENDERMAN) as Enderman
+        if (mode.equals("spider", ignoreCase = true))
+            view = p.world.spawnEntity(p.location, EntityType.SPIDER) as Spider
+
         if (view == null) return false
         if (view is Creeper) {
             view.maxFuseTicks = 1000
         }
+
+
         val finalView: Monster = view
         finalView.isInvisible = true
         finalView.isSilent = true
         finalView.isInvulnerable = true
         finalView.teleport(p.location)
-        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
             val pastLocation: Location = p.location
-            Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+            Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
                 val directionVector: Vector = p.location.subtract(pastLocation).toVector()
-                if (directionVector.length() !== 0) finalView.velocity = directionVector.normalize().multiply(
-                    Math.sqrt(
-                        pastLocation.distance(
-                            p.location
-                        )
-                    )
-                )
+                if (directionVector.length().toInt() != 0)
+                    finalView.velocity = directionVector.normalize().multiply(Math.sqrt(pastLocation.distance(p.location)))
+
                 finalView.isAware = false
+
+                // ゲームモードを指定秒数後に戻して視界を戻す
                 val current = p.gameMode
                 p.gameMode = GameMode.SPECTATOR
                 finalView.setRotation(p.location.yaw, p.location.pitch)
                 p.spectatorTarget = finalView
-                Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+                Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
                     p.gameMode = current
                     finalView.remove()
-                    playerInVision.remove(p.uniqueId)
-                }, 20L * args[1].toInt())
+                 }, 20L * sec)
             }, 2)
         }, 1)
         return true
     }
-*/
 }
