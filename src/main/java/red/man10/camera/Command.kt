@@ -276,23 +276,21 @@ object Command : CommandExecutor, TabCompleter {
 
         // コマンドで指定されたロケーション
         val loc = Location(Bukkit.getWorld(w),x,y,z,yaw,pitch)
-
         // 特定の場所にmobをわかせる
         var mob = spawnMob(sender,"",sec,loc)
-
-
         Bukkit.getOnlinePlayers().forEach { p ->
             if(!p.isOp){
 
                 // ゲームモードを指定秒数後に戻して視界を戻す
-                val current = p.gameMode
+             //   val current = p.gameMode
                 val pastLocation = p.location
                 p.gameMode = GameMode.SPECTATOR
                 p.spectatorTarget = mob
 
                 //
                 Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
-                    p.gameMode = current
+                  //  p.gameMode = current
+                    p.gameMode = GameMode.SURVIVAL
                     p.teleport(pastLocation)
                 }, 20L * sec)
             }

@@ -227,6 +227,7 @@ class Main : JavaPlugin() ,Listener {
     fun onPlayerQuit(e: PlayerQuitEvent) {
         // ログアウトしたユーザーのデータは消去
         playerMap.remove(e.player.uniqueId)
+        e.player.gameMode = GameMode.SURVIVAL
     }
 
     // 銃や弓などのダメージイベント
