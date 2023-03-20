@@ -241,8 +241,9 @@ object Command : CommandExecutor, TabCompleter {
             return
         }
 
+        var player:Player? = null
         if(args.size == 2){
-            val player = Bukkit.getPlayer(args[1])
+            player = Bukkit.getPlayer(args[1])
             if(player != null) {
                 getCamera(label).cameraPlayer!!.teleport(player.location)
                 return
@@ -275,11 +276,31 @@ object Command : CommandExecutor, TabCompleter {
 
         // コマンドで指定されたロケーション
         val loc = Location(Bukkit.getWorld(w),x,y,z,yaw,pitch)
+
+        // 特定の場所にmobをわかせる
+        var mob = spawnMob(sender,"",sec,loc)
+
+
         Bukkit.getOnlinePlayers().forEach { p ->
             if(!p.isOp){
-                setVision(sender,p.name,"allay",sec,loc)
+
+                // ゲームモードを指定秒数後に戻して視界を戻す
+                val current = p.gameMode
+                val pastLocation = p.location
+                p.gameMode = GameMode.SPECTATOR
+                p.spectatorTarget = mob
+
+                //
+                Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+                    p.gameMode = current
+                    p.teleport(pastLocation)
+                }, 20L * sec)
             }
         }
+
+        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+              mob?.remove()
+        }, 20L * sec)
 
     }
     private fun freeze(label:String,sender: CommandSender,args: Array<out String>){
@@ -529,6 +550,20 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     }
 
 
+    fun spawnMob(sender:CommandSender,mode:String,sec:Int,loc:Location): Mob? {
+        val mob: Mob = loc.world.spawnEntity(loc,EntityType.ALLAY) as Mob
+        mob.isInvisible = true
+        mob.isSilent = true
+        mob.isInvulnerable = true
+        mob.setAI(false)
+        mob.setGravity(false)
+        mob.isCollidable = false
+        mob.teleport(loc)
+        mob.setRotation(loc.yaw,loc.pitch)
+        return mob
+    }
+
+
     // 指定秒数間エフェクトをかける
     // "creeper","enderman","spider"
     fun setVision(sender:CommandSender,mcid:String,mode:String,sec:Int,loc:Location? = null): Boolean {
@@ -562,6 +597,8 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         finalView.isInvulnerable = true
         finalView.setAI(false)
         finalView.setGravity(false)
+        finalView.isCollidable = false
+
         if(loc != null)
             finalView.teleport(loc)
         else
