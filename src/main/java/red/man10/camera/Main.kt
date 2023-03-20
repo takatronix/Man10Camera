@@ -1,6 +1,7 @@
 package red.man10.camera
 
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.entity.Player
@@ -59,6 +60,8 @@ class Main : JavaPlugin() ,Listener {
         showConfigData()
 
         this.config.set("key","aaa")
+        getCommand("mc")!!.setExecutor(Command)
+
         // カメラスレッド生成
         for(no in 1..cameraCount){
             val label = "mc$no"
@@ -215,6 +218,8 @@ class Main : JavaPlugin() ,Listener {
 
         if(isCamera(e.player)){
             taskSwitchCount = 3
+        }else{
+            e.player.gameMode = GameMode.SURVIVAL
         }
     }
 

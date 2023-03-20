@@ -30,11 +30,8 @@ object Command : CommandExecutor, TabCompleter {
 
         when(args[0]){
             "help" -> showHelp(label,sender)
-            "live" -> youtube(label,sender)
             "set" -> set(label,sender,args)
-            "config" -> config(label,sender,args)
-            "vision" -> vision(label,sender,args)
-            "freeze" -> freeze(label,sender,args)
+
             "follow" -> follow(label,sender,args)
             "back" -> back(label,sender,args)
             "backview" -> backView(label,sender,args)
@@ -49,6 +46,9 @@ object Command : CommandExecutor, TabCompleter {
             "hide" -> getCamera(label).hide(sender)
             "title" -> title(label,sender,args)
             "text" -> text(label,sender,args)
+            "set" -> set(label,sender,args)
+
+            //
             "auto" -> {
                 Main.commandSender = sender
                 Main.autoTask = Main.autoTask != true
@@ -58,6 +58,10 @@ object Command : CommandExecutor, TabCompleter {
             "server" -> server(label,sender,args)
             "test" -> test(label,sender,args)
             "switch" -> {Main.taskSwitchCount = 0}
+            "config" -> config(label,sender,args)
+            "movie" -> movie(label,sender,args)
+            "vision" -> vision(label,sender,args)
+            "freeze" -> freeze(label,sender,args)
 
         }
 
@@ -230,6 +234,54 @@ object Command : CommandExecutor, TabCompleter {
         setVision(sender,player,mode,sec)
     }
 
+    // 特定の場所にすべてのプレイヤーをTPさせて見させる
+    private fun movie(label:String,sender: CommandSender,args: Array<out String>){
+        if(args.size > 3 || args.size < 1 ){
+            error("movie [w,x,y,z,yaw,pitch] 秒数" ,sender)
+            return
+        }
+
+        if(args.size == 2){
+            val player = Bukkit.getPlayer(args[1])
+            if(player != null) {
+                getCamera(label).cameraPlayer!!.teleport(player.location)
+                return
+            }
+        }
+
+        val wxyzyp= args[1].split(",")
+        if(wxyzyp.size <= 4){
+            error("movie [w,x,y,z,yaw,pitch] 秒数" ,sender)
+            return
+        }
+        val sec = args[2].toInt()
+
+        // 引数から転送先の座標を作成する
+        val w = wxyzyp[0]
+        val x = wxyzyp[1].toDouble()
+        val y = wxyzyp[2].toDouble()
+        val z = wxyzyp[3].toDouble()
+        var pitch = 0.0f
+        var yaw = 0.0f
+        if(wxyzyp.size >= 5)
+            yaw = wxyzyp[4].toFloat()
+        if(wxyzyp.size >= 6)
+            pitch = wxyzyp[5].toFloat()
+
+        if(Bukkit.getWorld(w) == null){
+            sender.sendMessage("指定されたworld:'$w'は無効です")
+            return
+        }
+
+        // コマンドで指定されたロケーション
+        val loc = Location(Bukkit.getWorld(w),x,y,z,yaw,pitch)
+        Bukkit.getOnlinePlayers().forEach { p ->
+            if(!p.isOp){
+                setVision(sender,p.name,"allay",sec,loc)
+            }
+        }
+
+    }
     private fun freeze(label:String,sender: CommandSender,args: Array<out String>){
         info("${args.size}")
         if(args.size <=2 || args.size>5){
@@ -341,17 +393,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label text (アクションテキスト) [秒数]")
         sender.sendMessage("§a/$label stop               停止")
 
-        sender.sendMessage("§b[全体制御]")
-        sender.sendMessage("§a/$label auto              自動モード切替")
-        sender.sendMessage("§a/$label switch            自動運転のターゲットを切替")
-        sender.sendMessage("§a/$label server [サーバ名]   転送先サーバ名")
 
-        sender.sendMessage("§a/$label vision [creeper/enderman/spider] [player] 秒数   プレイヤーの視界を切り替える")
-        sender.sendMessage("§a/$label freeze [player] 秒数 (メッセージ) (サブタイトル)")
-
-
-        sender.sendMessage("§b[共通設定]")
-        sender.sendMessage("§a/$label config broadcast [on/off]")
 
 
 
@@ -369,8 +411,21 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")
         sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
 
-        sender.sendMessage("§b[宣伝系]")
-        sender.sendMessage("§a/$label live       ライブ配信の告知")
+
+
+        sender.sendMessage("§c[共通制御]")
+        sender.sendMessage("§c/mc auto              自動モード切替")
+        sender.sendMessage("§c/mc switch            自動運転のターゲットを切替")
+        sender.sendMessage("§c/mc server [サーバ名]   転送先サーバ名")
+        sender.sendMessage("§c/mc freeze [player] 秒数 (メッセージ) (サブタイトル)  フリーズメッセージ表示")
+        sender.sendMessage("§a/mc movie world,x,y,z,yaw,pitch(秒数)  指定位置へテレポートし指定秒数そこを見させる(heist用)")
+        sender.sendMessage("§c/mc vision [creeper/enderman/spider] [player] 秒数   プレイヤーの視界を切り替える")
+
+        sender.sendMessage("§c[共通設定]")
+        sender.sendMessage("§c/mc config broadcast [on/off]")
+
+        sender.sendMessage("§c[宣伝系]")
+        sender.sendMessage("§c/mc live       ライブ配信の告知")
 
         /*
 sender.sendMessage("§b[開発中]")
@@ -405,9 +460,8 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch","vision","freeze")
+            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch","vision","freeze","movie")
         }
-
         when(args?.get(0)){
             "set" -> return onTabSet(args)
             "config" -> return onTabConfig(args)
@@ -432,21 +486,59 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         return null
     }
 
-    // 指定秒数間エフェクトをかける
-    // "creeper","enderman","spider"
-    fun setVision(sender:CommandSender,mcid:String,mode:String,sec:Int): Boolean {
+    private fun setArmorStandView(sender:CommandSender,mcid:String,location: Location,sec:Int): Boolean {
 
-        info("setvistion")
+        // プレイヤー確認
         val p: Player? = Bukkit.getPlayer(mcid)
         if (p == null || !p.isOnline || p.name != mcid) {
             error("プレイヤーが存在しない")
             return false
         }
 
-        //var m = p.world.spawnEntity(p.location,EntityType.ZOMBIE)
+        //  アーマースタンド作成
+        val armorStand = location.world.spawn(location, ArmorStand::class.java)
+        armorStand.setGravity(false)
+        armorStand.isVisible = false
+        armorStand.isMarker = true
+        armorStand.isSilent = true
+        armorStand.isInvulnerable = true
+        armorStand.setGravity(false)
+
+        // 戻るべき座標
+        val pastLocation: Location = p.location.clone()
+
+        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+            val directionVector: Vector = p.location.subtract(pastLocation).toVector()
+            if (directionVector.length().toInt() != 0)
+                armorStand.velocity = directionVector.normalize().multiply(Math.sqrt(pastLocation.distance(p.location)))
+
+            // ゲームモードを指定秒数後に戻して視界を戻す
+            val current = p.gameMode
+            p.gameMode = GameMode.SPECTATOR
+            armorStand.setRotation(p.location.yaw, p.location.pitch)
+
+            p.spectatorTarget = armorStand
+            Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+                p.teleport(pastLocation)
+                p.gameMode = current
+                armorStand.remove()
+            }, 20L * sec)
+        }, 2)
+
+        return true
+    }
 
 
-        var view: Monster? = null
+    // 指定秒数間エフェクトをかける
+    // "creeper","enderman","spider"
+    fun setVision(sender:CommandSender,mcid:String,mode:String,sec:Int,loc:Location? = null): Boolean {
+        val p: Player? = Bukkit.getPlayer(mcid)
+        if (p == null || !p.isOnline || p.name != mcid) {
+            error("プレイヤーが存在しない",sender)
+            return false
+        }
+
+        var view: Mob? = null
         if (mode.equals("creeper", ignoreCase = true))
             view = p.world.spawnEntity(p.location, EntityType.CREEPER) as Creeper
         if (mode.equals("enderman", ignoreCase = true))
@@ -454,17 +546,25 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         if (mode.equals("spider", ignoreCase = true))
             view = p.world.spawnEntity(p.location, EntityType.SPIDER) as Spider
 
-        if (view == null) return false
-        if (view is Creeper) {
-            view.maxFuseTicks = 1000
+        if (mode.equals("allay", ignoreCase = true))
+            view = p.world.spawnEntity(p.location, EntityType.ALLAY) as Allay
+        if (mode.equals("bat", ignoreCase = true))
+            view = p.world.spawnEntity(p.location, EntityType.BAT) as Bat
+
+        if (view == null){
+            error("mob view作成失敗:$mode",sender)
+            return false
         }
 
-
-        val finalView: Monster = view
+        val finalView: Mob = view
         finalView.isInvisible = true
         finalView.isSilent = true
         finalView.isInvulnerable = true
-        finalView.teleport(p.location)
+        finalView.setGravity(false)
+        if(loc != null)
+            finalView.teleport(loc)
+        else
+            finalView.teleport(p.location)
         Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
             val pastLocation: Location = p.location
             Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {

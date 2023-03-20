@@ -18,7 +18,7 @@ url = 'https://oss.sonatype.org/content/groups/public/'
 dependencies {
     implementation("org.mongodb:mongodb-driver:3.6.3")
     compileOnly fileTree(dir: 'libs', include: '*.jar')
-    compileOnly 'io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.19.1-R0.1-SNAPSHOT'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 

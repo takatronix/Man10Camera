@@ -61,7 +61,7 @@ class Kit {
             armor = arm.toTypedArray() as Array<ItemStack?>
         }
         p.inventory.clear()
-        p.inventory.setContents(inventory as Array<out ItemStack>?)
+        (inventory as Array<out ItemStack>?)?.let { p.inventory.setContents(it) }
         p.inventory.setArmorContents(armor)
         info( "${kitName}キットを装備しました",p)
         return true

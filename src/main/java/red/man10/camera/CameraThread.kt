@@ -568,7 +568,7 @@ class CameraThread : Thread() {
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
 
             val content = targetPlayer?.inventory?.contents
-            cameraPlayer?.inventory?.setContents(content as Array<out ItemStack>?)
+            (content as Array<out ItemStack>?)?.let { cameraPlayer?.inventory?.setContents(it) }
             cameraPlayer?.inventory?.heldItemSlot = targetPlayer?.inventory?.heldItemSlot!!
 
             if(targetPlayer?.health!! > 0)
