@@ -560,6 +560,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         finalView.isInvisible = true
         finalView.isSilent = true
         finalView.isInvulnerable = true
+        finalView.setAI(false)
         finalView.setGravity(false)
         if(loc != null)
             finalView.teleport(loc)
@@ -581,6 +582,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
                 p.spectatorTarget = finalView
                 Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
                     p.gameMode = current
+                    p.teleport(pastLocation)
                     finalView.remove()
                  }, 20L * sec)
             }, 2)
