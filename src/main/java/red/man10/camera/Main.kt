@@ -149,7 +149,13 @@ class Main : JavaPlugin() ,Listener {
             if (player != null) {
                 sendBungeeMessage(commandSender!!," &a&l"+ player.name + bungeeLiveMessage)
                 getCamera(1).backView(null,player)
+
+                // 3秒後にクローンモードに切り替え
+                Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+                    getCamera(1).clone(null,player)
+                }, 20L * 3)
             }
+
         })
 
     }

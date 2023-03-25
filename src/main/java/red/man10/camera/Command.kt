@@ -279,14 +279,15 @@ object Command : CommandExecutor, TabCompleter {
         // 特定の場所にmobをわかせる
         var mob = spawnMob(sender,"",sec,loc)
         Bukkit.getOnlinePlayers().forEach { p ->
-            if(!p.isOp){
-
+//            if(!p.isOp){
+                if(true){
                 // ゲームモードを指定秒数後に戻して視界を戻す
-             //   val current = p.gameMode
                 val pastLocation = p.location
-                p.gameMode = GameMode.SPECTATOR
-                p.spectatorTarget = mob
+                    p.teleport(loc)
 
+                Bukkit.getOnlinePlayers().forEach { p2 ->
+                    p.hidePlayer(Main.plugin,p2)
+                }
                 //
                 Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
                   //  p.gameMode = current
@@ -296,8 +297,15 @@ object Command : CommandExecutor, TabCompleter {
             }
         }
 
+
         Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
-              mob?.remove()
+            mob?.remove()
+            Bukkit.getOnlinePlayers().forEach { p ->
+                Bukkit.getOnlinePlayers().forEach { p2 ->
+                    p.showPlayer(Main.plugin, p2)
+                }
+            }
+
         }, 20L * sec)
 
     }

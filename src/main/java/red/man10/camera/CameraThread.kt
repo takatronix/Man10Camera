@@ -56,6 +56,7 @@ class CameraThread : Thread() {
     private var relativePos:Vector= Vector(5.0,2.0,0.0)    // カメラの相対位置
     private var cameraMode:CameraMode = CameraMode.AUTO              // 動作モード
     private var visibleMode:VisibleMode = VisibleMode.SHOW           // 表示モード
+
     //endregion
     //region プロパティ
     var cameraLabel = ""                     // カメララベル
