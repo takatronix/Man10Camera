@@ -24,7 +24,8 @@ enum class CameraMode{
     ROTATE,                     // 周囲を回る
     CLONE,                      // インベントリの同期
     BACK,                       // 背後（左右だけあわせる）
-    BACKVIEW,                   // 背後から視線も合わせる
+    BACK_VIEW,                  // 背後から視線も合わせる
+
 }
 // カメラの表示モード
 enum class VisibleMode {
@@ -132,7 +133,7 @@ class CameraThread : Thread() {
                 CameraMode.LOOK -> onLookMode()
                 CameraMode.CLONE -> onCloneMode()
                 CameraMode.BACK -> onBackMode()
-                CameraMode.BACKVIEW -> onBackViewMode()
+                CameraMode.BACK_VIEW -> onBackViewMode()
                 else-> onStopMode()
             }
             workingCounter++
@@ -342,7 +343,7 @@ class CameraThread : Thread() {
         if(!canStart(sender))
             return
 
-        setMode(sender,CameraMode.BACKVIEW)
+        setMode(sender,CameraMode.BACK_VIEW)
         if(player?.isOnline == true){
             target = player.uniqueId
         }
