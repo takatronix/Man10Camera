@@ -604,6 +604,9 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         finalView.setAI(false)
         finalView.setGravity(false)
         finalView.isCollidable = false
+        if(view is Creeper){
+            view.fuseTicks = Int.MAX_VALUE
+        }
 
         if(loc != null)
             finalView.teleport(loc)
