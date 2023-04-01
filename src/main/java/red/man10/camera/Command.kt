@@ -173,11 +173,12 @@ object Command : CommandExecutor, TabCompleter {
         }
         val serverName = args[1]
         for(no in 1..Main.cameraCount) {
-            var uuid = getCamera(no).uniqueId
-            if(uuid == null)
-                continue
-            var player = Bukkit.getOfflinePlayer(uuid)
-            sendBungeeCommand(sender,"send ${player.name} $serverName")
+            val uuid = getCamera(no).uniqueId ?: continue
+
+            if(getCamera(no).cameraLabel.equals(label) || label == "mc"){
+                val player = Bukkit.getOfflinePlayer(uuid)
+                sendBungeeCommand(sender,"send ${player.name} $serverName")
+            }
         }
     }
 
