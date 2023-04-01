@@ -222,30 +222,33 @@ class CameraThread : Thread() {
     // カメラモード設定
     private fun setMode(sender: CommandSender?,mode:CameraMode,specTarget:Player?= null){
         cameraMode = mode
+
         // クリエイティブとスペクテーターを切り替えてスペクテーターターゲットを外す
-        val camera = cameraPlayer
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
             if(mode == CameraMode.CLONE){
-                camera?.gameMode = GameMode.SURVIVAL
+                cameraPlayer?.gameMode = GameMode.SURVIVAL
             }
             else if(mode == CameraMode.SPECTATOR){
-                camera?.gameMode = GameMode.CREATIVE
-                camera?.gameMode = GameMode.SPECTATOR
-                camera?.spectatorTarget = specTarget
+                cameraPlayer?.gameMode = GameMode.CREATIVE
+                cameraPlayer?.gameMode = GameMode.SPECTATOR
+                cameraPlayer?.spectatorTarget = specTarget
             }
             else{
-                camera?.gameMode = GameMode.CREATIVE
+                cameraPlayer?.gameMode = GameMode.CREATIVE
             }
 
         })
+        setAppearance(sender)
+        setNightVision(sender,nightVisionFlag)
+    }
 
+    fun setAppearance(sender: CommandSender?){
         // 表示モードに基づいて表示を合わせる
         when(visibleMode){
             VisibleMode.SHOWBODY -> showBody(sender)
             VisibleMode.SHOW -> show(sender)
             VisibleMode.HIDE -> hide(sender)
         }
-        setNightVision(sender,nightVisionFlag)
     }
 
     // 鯖にいるユーザーに通知する

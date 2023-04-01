@@ -224,6 +224,9 @@ class Main : JavaPlugin() ,Listener {
 
         if(isCamera(e.player)){
             taskSwitchCount = 3
+            // ログインしたのがカメラプレイヤーなら外見を設定する
+            val cam = getCamera(e.player.uniqueId)
+            cam?.setAppearance(null)
         }else{
             e.player.gameMode = GameMode.SURVIVAL
         }
@@ -276,6 +279,17 @@ fun getCamera(label:String="mc1"):CameraThread{
         else -> Main.mc1
     }
 }
+fun getCamera(uuid:UUID):CameraThread?{
+    return when(uuid){
+        Main.mc1.uniqueId -> Main.mc1
+        Main.mc1.uniqueId -> Main.mc2
+        Main.mc1.uniqueId -> Main.mc3
+        Main.mc1.uniqueId -> Main.mc4
+        else -> null
+    }
+}
+
+
 // 番号からカメラを取得
 fun getCamera(no:Int=1):CameraThread{
     return when(no){
