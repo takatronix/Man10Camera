@@ -440,6 +440,13 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
 
 
+        sender.sendMessage("§c[外見制御]")
+        sender.sendMessage("§c/mc kit list          登録済みのKitのリスト")
+        sender.sendMessage("§c/mc kit save [name]   現在の装備(Inv含む)を保存")
+        sender.sendMessage("§c/mc kit load [name]   現在の装備(Inv含む)を読み込む")
+        sender.sendMessage("§c/mc kit delete [name] 登録済みのkitを削除")
+        sender.sendMessage("§a/$label kit [name]    登録済みのkitを設定")
+
 
         sender.sendMessage("§c[共通制御]")
         sender.sendMessage("§c/mc auto              自動モード切替")

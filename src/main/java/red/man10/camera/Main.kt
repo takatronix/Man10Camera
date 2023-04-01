@@ -2,6 +2,7 @@ package red.man10.camera
 
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.entity.Player
@@ -16,14 +17,19 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
+import org.bukkit.scheduler.BukkitRunnable
 import red.man10.kit.Kit
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 
+
 class Main : JavaPlugin() ,Listener {
+
+    private val teleportTasks = mutableMapOf<Player, TeleportTask>()
+
     companion object {
-        var commandSender:CommandSender?= null
+        var commandSender: CommandSender? = null
         val youtubeMessage = "&c&lYoutubeライブ配信中!! &f&l->  &f&l&nhttps://www.youtube.com/@man10server/live"
         val bungeeLiveMessage = "&f&lさんを&c&lYoutubeでライブ配信中！！  &f&l&nhttps://www.youtube.com/@man10server/live"
 
@@ -35,10 +41,10 @@ class Main : JavaPlugin() ,Listener {
         lateinit var plugin: JavaPlugin
         const val cameraCount = 4
         const val sleepDetect = 15000
-        var mc1= CameraThread()
-        var mc2= CameraThread()
-        var mc3= CameraThread()
-        var mc4= CameraThread()
+        var mc1 = CameraThread()
+        var mc2 = CameraThread()
+        var mc3 = CameraThread()
+        var mc4 = CameraThread()
 
         var kit = Kit()
 
@@ -59,11 +65,11 @@ class Main : JavaPlugin() ,Listener {
         configData = loadConfigData(config)
         showConfigData()
 
-        this.config.set("key","aaa")
+        this.config.set("key", "aaa")
         getCommand("mc")!!.setExecutor(Command)
 
         // カメラスレッド生成
-        for(no in 1..cameraCount){
+        for (no in 1..cameraCount) {
             val label = "mc$no"
             getCommand(label)!!.setExecutor(Command)
             val camera = getCamera(label)
@@ -77,16 +83,16 @@ class Main : JavaPlugin() ,Listener {
         mc4.cameraName = "[カメラ４]"
 
         // リロード後のユーザーはjoinイベントがないためデータを作る必要がある
-        Bukkit.getOnlinePlayers().forEach { player ->  playerMap.putIfAbsent(player.uniqueId,PlayerData())}
+        Bukkit.getOnlinePlayers().forEach { player -> playerMap.putIfAbsent(player.uniqueId, PlayerData()) }
         // 自動処理スレッド
         thread {
             info("auto task thread started")
-            while(running){
+            while (running) {
                 Thread.sleep(1000)
-                taskSwitchCount --
-                if(taskSwitchCount <= 0){
+                taskSwitchCount--
+                if (taskSwitchCount <= 0) {
                     taskSwitchCount = configData.switchTime
-                    if(autoTask)
+                    if (autoTask)
                         autoCameraTask()
                 }
 
@@ -94,65 +100,76 @@ class Main : JavaPlugin() ,Listener {
             info("auto task thread ended")
         }
 
+
+        // 1tick毎のタスクを設定する
+        Bukkit.getServer().scheduler.scheduleSyncRepeatingTask(this, {
+            for (no in 1..cameraCount) {
+                getCamera(no).onTick()
+            }
+        }, 0L, 1L)
+
+
+
         plugin.server.pluginManager.registerEvents(this, plugin)
         info("Man10 Camera Plugin Enabled")
     }
 
 
     // 除外プレイヤーか(OPとカメラは監視からのぞく)
-    fun isExclusionPlayer(uuid:UUID):Boolean{
+    fun isExclusionPlayer(uuid: UUID): Boolean {
         var player = Bukkit.getPlayer(uuid)
-        if(player?.isOnline == false)
+        if (player?.isOnline == false)
             return true
-        if(player?.isOp == true)
+        if (player?.isOp == true)
             return true
-        if(isCamera(player))
+        if (isCamera(player))
             return true
         return false
     }
-    fun autoCameraTask(){
+
+    fun autoCameraTask() {
 
         info("自動切換えタスク")
 
-        if(getCamera(1).cameraPlayer == null){
+        if (getCamera(1).cameraPlayer == null) {
             info("camera1がいないため自動処理は停止")
             return
         }
 
         // アクティブなプレイヤー順にソート
         val list = playerMap.toList().sortedByDescending { it.second.updateTime }
-        val activeList:MutableList<PlayerData>  = mutableListOf()
+        val activeList: MutableList<PlayerData> = mutableListOf()
         //  アクティブな放送対象の
         activeList.clear()
-        list.forEach {data: Pair<UUID, PlayerData> ->
+        list.forEach { data: Pair<UUID, PlayerData> ->
             val uuid = data.first
             val pd = data.second
             pd.uuid = uuid
 
-            if(!isExclusionPlayer(uuid)){
+            if (!isExclusionPlayer(uuid)) {
                 // アクティブかつ、現在表示してない対象
-                if(pd.isActive() && !isTarget(Bukkit.getPlayer(uuid!!)))
-                   activeList.add(pd)
+                if (pd.isActive() && !isTarget(Bukkit.getPlayer(uuid!!)))
+                    activeList.add(pd)
             }
         }
 
-        if(activeList.size == 0){
+        if (activeList.size == 0) {
             info("切替対象なし")
             return
         }
-     //   info("アクティブなプレイヤー数:${activeList.size}")
+        //   info("アクティブなプレイヤー数:${activeList.size}")
         activeList.shuffle()
 
         // 次の表示対象
         Bukkit.getScheduler().runTask(plugin, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             if (player != null) {
-                sendBungeeMessage(commandSender!!," &a&l"+ player.name + bungeeLiveMessage)
-                getCamera(1).backView(null,player)
+                sendBungeeMessage(commandSender!!, " &a&l" + player.name + bungeeLiveMessage)
+                getCamera(1).backView(null, player)
 
                 // 3秒後にクローンモードに切り替え
                 Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
-                    getCamera(1).clone(null,player)
+                    getCamera(1).clone(null, player)
                 }, 20L * 3)
             }
 
@@ -163,71 +180,82 @@ class Main : JavaPlugin() ,Listener {
     override fun onDisable() {
         info("Disabling Man10 Camera Plugin")
         running = false
-        for(no in 1..cameraCount) {
+        for (no in 1..cameraCount) {
             getCamera(no).running = false
         }
     }
-    fun test(){
+
+    fun test() {
         playerMap.toList()
     }
+
     //region イベントコールバック
     @EventHandler
-    fun onPickUp(e: EntityPickupItemEvent){
-        val entity=e.entity
-        if(entity !is Player)
+    fun onPickUp(e: EntityPickupItemEvent) {
+        val entity = e.entity
+        if (entity !is Player)
             return
         //  カメラはアイテムを拾わない
-        for(no in 1..cameraCount) {
-            if(entity.uniqueId == getCamera(no).uniqueId)
+        for (no in 1..cameraCount) {
+            if (entity.uniqueId == getCamera(no).uniqueId)
                 e.isCancelled = true
         }
     }
+
     @EventHandler
-    fun onPlayerDeath(e: PlayerDeathEvent){
-        val entity=e.entity
-        for(no in 1..cameraCount) {
-            if(entity.uniqueId == getCamera(no).uniqueId){
+    fun onPlayerDeath(e: PlayerDeathEvent) {
+        val entity = e.entity
+        for (no in 1..cameraCount) {
+            if (entity.uniqueId == getCamera(no).uniqueId) {
                 e.isCancelled = true
                 entity.sendMessage("カメラプレイヤーにされているため死亡をキャンセルしました")
             }
         }
     }
+
     @EventHandler
-    fun onPlayerMove(e: PlayerMoveEvent){
+    fun onPlayerMove(e: PlayerMoveEvent) {
         val uuid = e.player.uniqueId
         playerMap[uuid]?.playerMoveCount = playerMap[uuid]?.playerMoveCount!! + 1
         playerMap[uuid]?.updateTime = System.currentTimeMillis()
     }
+
     @EventHandler
-    fun onPlayerFish(e: PlayerFishEvent){
+    fun onPlayerFish(e: PlayerFishEvent) {
         val uuid = e.player.uniqueId
         playerMap[uuid]?.playerFishCount = playerMap[uuid]?.playerFishCount!! + 1
         playerMap[uuid]?.updateTime = System.currentTimeMillis()
     }
+
     @EventHandler
-    fun onInventoryClick(e: InventoryClickEvent){
+    fun onInventoryClick(e: InventoryClickEvent) {
         val uuid = e.whoClicked.uniqueId
         playerMap[uuid]?.inventoryClickCount = playerMap[uuid]?.inventoryClickCount!! + 1
         playerMap[uuid]?.updateTime = System.currentTimeMillis()
     }
+
     @EventHandler
-    fun onBlockBreak(e:BlockBreakEvent){
+    fun onBlockBreak(e: BlockBreakEvent) {
         val uuid = e.player.uniqueId
         playerMap[uuid]?.blockBreakCount = playerMap[uuid]?.blockBreakCount!! + 1
         playerMap[uuid]?.updateTime = System.currentTimeMillis()
     }
 
     @EventHandler
-    fun onPlayerJoin(e: PlayerJoinEvent){
+    fun onPlayerJoin(e: PlayerJoinEvent) {
         val uuid = e.player.uniqueId
-        playerMap.putIfAbsent(uuid,PlayerData())
+        playerMap.putIfAbsent(uuid, PlayerData())
 
-        if(isCamera(e.player)){
+        if (isCamera(e.player)) {
             taskSwitchCount = 3
-            // ログインしたのがカメラプレイヤーなら外見を設定する
-            val cam = getCamera(e.player.uniqueId)
-            cam?.setAppearance(null)
-        }else{
+
+            Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+                // ログインしたのがカメラプレイヤーなら外見を設定する
+                val cam = getCamera(e.player.uniqueId)
+                info("camera ${cam?.cameraPlayer?.name} logged in")
+                cam?.setAppearance(null)
+            }, 20L * 1)
+        } else {
             e.player.gameMode = GameMode.SURVIVAL
         }
     }
@@ -249,6 +277,7 @@ class Main : JavaPlugin() ,Listener {
 
         }
     }
+
     //      ヒットダメージ等
     @EventHandler
     fun PlayerDamageReceive(e: EntityDamageByEntityEvent) {
@@ -256,10 +285,53 @@ class Main : JavaPlugin() ,Listener {
             val damagedPlayer = e.entity as Player
         }
     }
+
+
     //endregion
+    private inner class TeleportTask(
+        val player: Player,
+        val dest: Location,
+        val lookLocation: Location?,
+        val sec: Double
+    ) : BukkitRunnable() {
+        private val startLocation: Location = player.location.clone()
+        private val startPitch: Float = player.location.pitch
+        private val startYaw: Float = player.location.yaw
+        private var tickCount = 0
+        private val totalTicks = (sec * 20).toInt()
 
+        override fun run() {
+            tickCount++
+
+            // 移動の割合を計算
+            val ratio = tickCount.toDouble() / totalTicks.toDouble()
+
+            // 新しい位置を計算
+            val newX = startLocation.x + (dest.x - startLocation.x) * ratio
+            val newY = startLocation.y + (dest.y - startLocation.y) * ratio
+            val newZ = startLocation.z + (dest.z - startLocation.z) * ratio
+            val newLocation = Location(player.world, newX, newY, newZ)
+
+            if (lookLocation != null) {
+                // 新しいpitch, yawを計算
+                newLocation.direction = lookLocation.clone().subtract(newLocation).toVector()
+            } else {
+                // 旧pitch, yawを線形補間で計算
+                newLocation.pitch = (startPitch + (dest.pitch - startPitch) * ratio.toFloat())
+                newLocation.yaw = (startYaw + (dest.yaw - startYaw) * ratio.toFloat())
+            }
+
+            // プレイヤーを新しい位置に移動
+            player.teleport(newLocation)
+
+            // タスクが完了したら、登録から削除
+            if (tickCount >= totalTicks) {
+                cancel()
+                teleportTasks.remove(player)
+            }
+        }
+    }
 }
-
 fun sendBungeeCommand(sender:CommandSender,command:String){
     Bukkit.dispatchCommand(sender,"bungeee ${command}")
 }
@@ -349,3 +421,4 @@ fun showConfigData(sender:CommandSender? = null){
     info("broadcast:${Main.configData.broadcast}")
     info("switchTime:${Main.configData.switchTime}")
 }
+

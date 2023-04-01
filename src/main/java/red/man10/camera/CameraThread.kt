@@ -50,13 +50,15 @@ class CameraThread : Thread() {
     private var height:Double = 2.0
     private var angleStep = 0.08                // 回転速度
     private var nightVisionFlag = false           // 暗視設定
-   // private var broadcast = true                // 配信を全体に通知するか
+    private var costume:String = ""
+    // private var broadcast = true                // 配信を全体に通知するか
     private var notificationFlag = true             // 配信を個人に通知するか
     private var titleFlag = true             // 配信を個人に通知するか
 
     private var relativePos:Vector= Vector(5.0,2.0,0.0)    // カメラの相対位置
     private var cameraMode:CameraMode = CameraMode.AUTO              // 動作モード
     private var visibleMode:VisibleMode = VisibleMode.SHOW           // 表示モード
+
 
     //endregion
     //region プロパティ
@@ -139,6 +141,14 @@ class CameraThread : Thread() {
             workingCounter++
         }
         info("Camera thread ended:${cameraLabel}")
+    }
+
+    // tick毎イベント
+    fun onTick(){
+
+
+
+
     }
 
     fun onEnterBlock(){
@@ -241,9 +251,10 @@ class CameraThread : Thread() {
         setAppearance(sender)
         setNightVision(sender,nightVisionFlag)
     }
-
     fun setAppearance(sender: CommandSender?){
         // 表示モードに基づいて表示を合わせる
+        info("visibleMode:$visibleMode")
+//        cameraPlayer?.inventory.item
         when(visibleMode){
             VisibleMode.SHOWBODY -> showBody(sender)
             VisibleMode.SHOW -> show(sender)
@@ -686,6 +697,7 @@ class CameraThread : Thread() {
             config["nightVisionFlag"] = nightVisionFlag
             config["notificationFlag"] = notificationFlag
             config["titleFlag"] = titleFlag
+            config["costume"] = costume
 
             config.save(file)
         }
@@ -719,6 +731,7 @@ class CameraThread : Thread() {
             radius = config.getDouble("radius",5.0)
             height = config.getDouble("height",2.0)
 
+            costume = config.getString("costume",null).toString()
             val gameMode = enumValueOf<GameMode>(config["gameMode"].toString())
             cameraPlayer?.gameMode = gameMode
         }
@@ -740,8 +753,6 @@ class CameraThread : Thread() {
         return false
     }
     //endregion
-
-
 
 }
 
