@@ -29,6 +29,7 @@ class Main : JavaPlugin() ,Listener {
     private val teleportTasks = mutableMapOf<Player, TeleportTask>()
 
     companion object {
+        val version = "2023/4/10"
         var commandSender: CommandSender? = null
         val youtubeMessage = "&c&lYoutubeライブ配信中!! &f&l->  &f&l&nhttps://www.youtube.com/@man10server/live"
         val bungeeLiveMessage = "&f&lさんを&c&lYoutubeでライブ配信中！！  &f&l&nhttps://www.youtube.com/@man10server/live"

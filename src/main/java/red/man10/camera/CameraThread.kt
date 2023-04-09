@@ -235,16 +235,21 @@ class CameraThread : Thread() {
 
         // クリエイティブとスペクテーターを切り替えてスペクテーターターゲットを外す
         Bukkit.getScheduler().runTask(Main.plugin, Runnable {
-            if(mode == CameraMode.CLONE){
-                cameraPlayer?.gameMode = GameMode.SURVIVAL
-            }
-            else if(mode == CameraMode.SPECTATOR){
-                cameraPlayer?.gameMode = GameMode.CREATIVE
-                cameraPlayer?.gameMode = GameMode.SPECTATOR
-                cameraPlayer?.spectatorTarget = specTarget
-            }
-            else{
-                cameraPlayer?.gameMode = GameMode.CREATIVE
+            when (mode) {
+                CameraMode.CLONE -> {
+                    cameraPlayer?.gameMode = GameMode.SURVIVAL
+                }
+                CameraMode.SPECTATOR -> {
+                    cameraPlayer?.gameMode = GameMode.CREATIVE
+                    cameraPlayer?.gameMode = GameMode.SPECTATOR
+                    cameraPlayer?.spectatorTarget = specTarget
+                }
+                CameraMode.BACK_VIEW -> {
+                    cameraPlayer?.gameMode = GameMode.SPECTATOR
+                }
+                else -> {
+                    cameraPlayer?.gameMode = GameMode.CREATIVE
+                }
             }
 
         })
@@ -304,12 +309,12 @@ class CameraThread : Thread() {
 
     //region 基本コマンド
     // 特定プレイヤーを追跡
-    fun follow(sender: CommandSender?,player:Player? = null){
+    fun follow(sender: CommandSender?,player:Player? = null) {
         target = player?.uniqueId
-        if(!canStart(sender))
+        if (!canStart(sender))
             return
-        setMode(sender,CameraMode.FOLLOW)
-        if(player?.isOnline == true){
+        setMode(sender, CameraMode.FOLLOW)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
 
@@ -324,10 +329,12 @@ class CameraThread : Thread() {
 
         showCamera();
 
-        info("${player!!.name}をフォローモードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        info("${player!!.name}をフォローモードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
+
+
     fun back(sender: CommandSender?,player:Player? = null){
         target = player?.uniqueId
         if(!canStart(sender))
@@ -376,6 +383,7 @@ class CameraThread : Thread() {
         notifyUsers(Main.liveMessage,sender,player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
+
     fun clone(sender: CommandSender?,player:Player? = null){
         target = player?.uniqueId
         if(!canStart(sender))

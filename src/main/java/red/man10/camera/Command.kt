@@ -406,7 +406,7 @@ object Command : CommandExecutor, TabCompleter {
     }
     // ヘルプメッセージ
     private fun showHelp(label:String,sender: CommandSender){
-        sender.sendMessage("§b====================[Man10 Camera System]====================")
+        sender.sendMessage("§b===============[Man10 Camera System ver.${Main.version}]====================")
         sender.sendMessage("§amc1/mc2/mc3/mc4 カメラ1/カメラ2/カメラ3/カメラ4を制御")
         sender.sendMessage("§b[動作モード制御]")
         sender.sendMessage("§a/$label follow (player)    プレイヤーを追跡する")
@@ -420,9 +420,6 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label title (タイトルメッセージ) サブタイトル [秒数]")
         sender.sendMessage("§a/$label text (アクションテキスト) [秒数]")
         sender.sendMessage("§a/$label stop               停止")
-
-
-
 
 
         sender.sendMessage("§b[カメラ別設定コマンド]設定は保存されます")
