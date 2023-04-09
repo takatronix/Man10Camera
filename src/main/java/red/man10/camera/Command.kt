@@ -34,7 +34,9 @@ object Command : CommandExecutor, TabCompleter {
 
             "follow" -> follow(label,sender,args)
             "back" -> back(label,sender,args)
+            "face" -> face(label,sender,args)
             "backview" -> backView(label,sender,args)
+            "front" -> front(label,sender,args)
             "rotate" -> rotate(label,sender,args)
             "clone" -> clone(label,sender,args)
             "look" -> look(label,sender,args)
@@ -84,6 +86,12 @@ object Command : CommandExecutor, TabCompleter {
     }
     private fun back(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).back(sender, onlinePlayer(sender,args))
+    }
+    private fun front(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).front(sender, onlinePlayer(sender,args))
+    }
+    private fun face(label:String,sender: CommandSender,args: Array<out String>){
+        getCamera(label).face(sender, onlinePlayer(sender,args))
     }
     private fun backView(label:String,sender: CommandSender,args: Array<out String>){
         getCamera(label).backView(sender, onlinePlayer(sender,args))
@@ -414,8 +422,10 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label spectate (player)  対象のプレイヤーの視点を見る(スペクテーター)")
         sender.sendMessage("§a/$label clone (player)     対象プレーヤーの状態をクローンする")
         sender.sendMessage("§a/$label back (player)      対象プレーヤーの背後につく(左右だけ向く)")
-        sender.sendMessage("§a/$label backview (player)  対象プレーヤーの背後から視線を合わせる")
+        sender.sendMessage("§a/$label backview (player)  対象プレーヤーの背後から視線を合わせる(スペクテーター)")
         sender.sendMessage("§a/$label look (player)      停止して対象プレイヤーに注視する")
+        sender.sendMessage("§a/$label front (player)     プレイヤー前方に現れる")
+        sender.sendMessage("§a/$label face (player)      プレイヤーの視線の先に現れる")
         sender.sendMessage("§a/$label tp (player/loc(world,x,y,z[,yaw,pitch])  指定位置へテレポート")
         sender.sendMessage("§a/$label title (タイトルメッセージ) サブタイトル [秒数]")
         sender.sendMessage("§a/$label text (アクションテキスト) [秒数]")
@@ -492,7 +502,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","show","showbody","hide","live","auto","server","switch","vision","freeze","movie")
+            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","front","face","show","showbody","hide","live","auto","server","switch","vision","freeze","movie")
         }
         when(args?.get(0)){
             "set" -> return onTabSet(args)

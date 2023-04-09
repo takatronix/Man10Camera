@@ -24,7 +24,9 @@ enum class CameraMode{
     ROTATE,                     // 周囲を回る
     CLONE,                      // インベントリの同期
     BACK,                       // 背後（左右だけあわせる）
-    BACK_VIEW,                  // 背後から視線も合わせる
+    BACK_VIEW,                  // 背後から視線も合わせる(スペクテーター)
+    FRONT,                      // 視線の先に現れる
+    FACE,                       // 顔の前に現れる
 
 }
 // カメラの表示モード
@@ -136,6 +138,8 @@ class CameraThread : Thread() {
                 CameraMode.CLONE -> onCloneMode()
                 CameraMode.BACK -> onBackMode()
                 CameraMode.BACK_VIEW -> onBackViewMode()
+                CameraMode.FRONT -> onFrontMode()
+                CameraMode.FACE -> onFaceMode()
                 else-> onStopMode()
             }
             workingCounter++
@@ -334,7 +338,54 @@ class CameraThread : Thread() {
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
 
+    fun face(sender: CommandSender?,player:Player? = null){
+        target = player?.uniqueId
+        if(!canStart(sender))
+            return
 
+        setMode(sender,CameraMode.FACE)
+        if(player?.isOnline == true){
+            target = player.uniqueId
+        }
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.y = 0.0
+        vec.normalize()
+        vec.multiply(radius)
+        vec.y = height
+        this.relativePos = vec
+
+        showCamera();
+
+        info("${player!!.name}を顔モードに設定",sender)
+        notifyUsers(Main.liveMessage,sender,player)
+        showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+    }
+    fun front(sender: CommandSender?,player:Player? = null){
+        target = player?.uniqueId
+        if(!canStart(sender))
+            return
+
+        setMode(sender,CameraMode.FRONT)
+        if(player?.isOnline == true){
+            target = player.uniqueId
+        }
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.y = 0.0
+        vec.normalize()
+        vec.multiply(radius)
+        vec.y = height
+        this.relativePos = vec
+
+        showCamera();
+
+        info("${player!!.name}を前方モードに設定",sender)
+        notifyUsers(Main.liveMessage,sender,player)
+        showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
+    }
     fun back(sender: CommandSender?,player:Player? = null){
         target = player?.uniqueId
         if(!canStart(sender))
@@ -558,6 +609,47 @@ class CameraThread : Thread() {
         vec.y = height
         this.relativePos = vec
 
+        // ターゲットの相対位置のカメラ位置
+        val loc = targetPlayer?.location?.add(relativePos)
+        val pos = loc?.toVector()
+        val dir = targetPos?.subtract(pos!!)
+        loc?.direction = dir!!
+        teleport(loc)
+    }
+    private fun onFrontMode(){
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+        vec.y = 0.0
+        vec.normalize()
+        vec.multiply(radius)
+        vec.y = height
+        this.relativePos = vec
+
+        // ターゲットの相対位置のカメラ位置
+        val loc = targetPlayer?.location?.add(relativePos)
+        val pos = loc?.toVector()
+        val dir = targetPos?.subtract(pos!!)
+        loc?.direction = dir!!
+        teleport(loc)
+    }
+    private fun onFaceMode(){
+
+        // 対象の視線ベクトル
+        val vec = targetPlayer!!.location.direction.clone()
+
+        // ベクトルを反転させる
+        //vec.multiply(-1.0)
+        vec.multiply(2)
+
+        this.relativePos = vec
+/*
+        vec.y = 0.0
+        vec.normalize()
+        vec.multiply(radius)
+        vec.y = height
+        this.relativePos = vec
+*/
         // ターゲットの相対位置のカメラ位置
         val loc = targetPlayer?.location?.add(relativePos)
         val pos = loc?.toVector()
