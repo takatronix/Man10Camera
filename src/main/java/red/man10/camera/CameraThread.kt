@@ -638,18 +638,9 @@ class CameraThread : Thread() {
         // 対象の視線ベクトル
         val vec = targetPlayer!!.location.direction.clone()
 
-        // ベクトルを反転させる
-        //vec.multiply(-1.0)
         vec.multiply(2)
+        this.relativePos = vec
 
-        this.relativePos = vec
-/*
-        vec.y = 0.0
-        vec.normalize()
-        vec.multiply(radius)
-        vec.y = height
-        this.relativePos = vec
-*/
         // ターゲットの相対位置のカメラ位置
         val loc = targetPlayer?.location?.add(relativePos)
         val pos = loc?.toVector()

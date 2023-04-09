@@ -12,6 +12,7 @@ import org.bukkit.entity.*
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.util.Vector
+import red.man10.kit.Kit
 
 
 object Command : CommandExecutor, TabCompleter {
@@ -31,7 +32,7 @@ object Command : CommandExecutor, TabCompleter {
         when(args[0]){
             "help" -> showHelp(label,sender)
             "set" -> set(label,sender,args)
-
+            "kit" -> kit(label,sender,args)
             "follow" -> follow(label,sender,args)
             "back" -> back(label,sender,args)
             "face" -> face(label,sender,args)
@@ -210,7 +211,28 @@ object Command : CommandExecutor, TabCompleter {
             "title" -> setTitleFlag(label,sender,name)
         }
     }
-
+    private fun kit(label:String,sender: CommandSender,args: Array<out String>){
+        if(args.size < 2){
+            showHelp(label,sender)
+            return
+        }
+        val key = args[1]
+        if(args.size == 2){
+            when(key){
+                "list" -> { Kit.showlist(sender) }
+            }
+            return
+        }
+        val name = args[2]
+        when(key) {
+            "save" -> { Kit.save(sender,name) }
+            "delete" -> { Kit.delete(sender,name) }
+            "load" -> { Kit.load(sender,name) }
+            "set" -> {
+                getCamera(label).cameraPlayer?.let { Kit.load(it,name) }
+            }
+        }
+    }
     // 共通config
     private fun config(label:String,sender: CommandSender,args: Array<out String>){
 
@@ -445,14 +467,14 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
         sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")
         sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
+        sender.sendMessage("§a/$label kit set [name]  登録済みのkitを設定")
 
 
         sender.sendMessage("§c[外見制御]")
         sender.sendMessage("§c/mc kit list          登録済みのKitのリスト")
         sender.sendMessage("§c/mc kit save [name]   現在の装備(Inv含む)を保存")
-        sender.sendMessage("§c/mc kit load [name]   現在の装備(Inv含む)を読み込む")
+        sender.sendMessage("§c/mc kit load [name]   登録済みのkitを設定(自分に)")
         sender.sendMessage("§c/mc kit delete [name] 登録済みのkitを削除")
-        sender.sendMessage("§a/$label kit [name]    登録済みのkitを設定")
 
 
         sender.sendMessage("§c[共通制御]")
@@ -502,10 +524,11 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
 
         if(args?.size == 1){
-            return listOf("set","config","follow","rotate","clone","back","backview","tp","look","spectate","stop","front","face","show","showbody","hide","live","auto","server","switch","vision","freeze","movie")
+            return listOf("set","config","follow","rotate","clone","back","backview","kit","tp","look","spectate","stop","front","face","show","showbody","hide","live","auto","server","switch","vision","freeze","movie")
         }
         when(args?.get(0)){
             "set" -> return onTabSet(args)
+            "kit" -> return onTabKit(args)
             "config" -> return onTabConfig(args)
             "vision" -> return onTabVision(args)
         }
@@ -515,6 +538,11 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     private fun onTabSet(args: Array<out String>?) : List<String>?{
         if(args?.size == 2)
             return listOf("target","camera","position","radius","height","nightvision","notification","title")
+        return null
+    }
+    private fun onTabKit(args: Array<out String>?) : List<String>?{
+        if(args?.size == 2)
+            return listOf("list","save","load","delete")
         return null
     }
     private fun onTabConfig(args: Array<out String>?) : List<String>?{
