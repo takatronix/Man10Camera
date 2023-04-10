@@ -20,7 +20,7 @@ object Command : CommandExecutor, TabCompleter {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
 
         if(label == "manbo"){
-            sendClickableMessage(sender as Player,"質問するには「まんぼ、銀行はどこ？」「丸石をうりたいまんぼ」のように「まんぼ」をつけて質問してください。","/say")
+            sender.sendMessage("§b§l[まんぼ]§f質問するには「まんぼ、銀行はどこ？」「丸石をうりたいまんぼ」のように「まんぼ」をつけて質問してください。")
             return false
         }
 
