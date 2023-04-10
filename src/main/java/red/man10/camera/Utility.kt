@@ -1,9 +1,8 @@
 package red.man10.camera
 
-import net.kyori.adventure.title.Title
+import net.md_5.bungee.api.ChatColor
 import net.md_5.bungee.api.ChatMessageType
-import net.md_5.bungee.api.chat.BaseComponent
-import net.md_5.bungee.api.chat.TextComponent
+import net.md_5.bungee.api.chat.*
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -68,6 +67,13 @@ fun getOnlinePlayer(sender: CommandSender, name:String?): Player?{
 }
 fun toRadian(angle: Double): Double {
     return angle * Math.PI / 180f
+}
+
+fun sendClickableMessage(player: Player, message: String, command: String) {
+    val textComponent = TextComponent(message)
+    textComponent.color = ChatColor.GOLD
+    textComponent.clickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, command)
+    player.spigot().sendMessage(textComponent)
 }
 class Utility {
 
@@ -181,5 +187,6 @@ class Utility {
             throw IOException("Unable to decode class type.", e)
         }
     }
+
 
 }

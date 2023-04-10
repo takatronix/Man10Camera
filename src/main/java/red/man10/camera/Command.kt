@@ -19,6 +19,11 @@ object Command : CommandExecutor, TabCompleter {
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
 
+        if(label == "manbo"){
+            sendClickableMessage(sender as Player,"質問するには「まんぼ、銀行はどこ？」「丸石をうりたいまんぼ」のように「まんぼ」をつけて質問してください。","/say")
+            return false
+        }
+
         if(!sender.hasPermission("red.man10.camera.op")){
             sender.sendMessage("このコマンドを実行する権限がない")
             return  false
@@ -529,6 +534,10 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
 
     // タブ補完
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
+
+        if(alias == "manbo"){
+            return null
+        }
 
         if(args?.size == 1){
             return listOf("set","config","follow","rotate","clone","back","backview","kit","tp","look","spectate","stop","front","face","show","showbody","hide","live","auto","server","switch","vision","freeze","movie")

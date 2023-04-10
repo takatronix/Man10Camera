@@ -10,9 +10,7 @@ import org.bukkit.entity.Projectile
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
-import org.bukkit.event.entity.EntityDamageByEntityEvent
-import org.bukkit.event.entity.EntityPickupItemEvent
-import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.entity.*
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
@@ -66,8 +64,8 @@ class Main : JavaPlugin() ,Listener {
         configData = loadConfigData(config)
         showConfigData()
 
-        this.config.set("key", "aaa")
         getCommand("mc")!!.setExecutor(Command)
+        getCommand("manbo")!!.setExecutor(Command)
 
         // カメラスレッド生成
         for (no in 1..cameraCount) {
@@ -210,6 +208,7 @@ class Main : JavaPlugin() ,Listener {
             if (entity.uniqueId == getCamera(no).uniqueId) {
                 e.isCancelled = true
                 entity.sendMessage("カメラプレイヤーにされているため死亡をキャンセルしました")
+                Kit.load(entity, "manbo")
             }
         }
     }
@@ -279,11 +278,55 @@ class Main : JavaPlugin() ,Listener {
         }
     }
 
-    //      ヒットダメージ等
+    fun setCameraAppearance(player: Player,health : Double) {
+        if(health > 17)
+            Kit.load(player, "manbo")
+        else if(health > 14.5)
+            Kit.load(player, "love")
+        else if(health > 12)
+            Kit.load(player, "question")
+        else if(health > 9.5)
+            Kit.load(player, "shock")
+        else if(health > 7)
+            Kit.load(player, "angry")
+        else if(health > 5)
+            Kit.load(player, "cry")
+        else if(health > 2.5)
+            Kit.load(player, "sleep")
+        else
+            Kit.load(player, "death")
+
+
+    }
+
     @EventHandler
-    fun PlayerDamageReceive(e: EntityDamageByEntityEvent) {
-        if (e.entity is Player) {
-            val damagedPlayer = e.entity as Player
+    fun onPlayerRegainHealth(event: EntityRegainHealthEvent) {
+        val entity = event.entity
+        if (entity is Player) {
+            if(!isCamera(entity))
+                return
+            val amount = event.amount
+            val healthBefore = entity.health
+            val healthAfter = (healthBefore + amount).coerceAtMost(entity.maxHealth)
+
+            println("プレイヤー ${entity.name}  が体力を回復しました: 回復量=$amount")
+            println("回復前のヘルス: $healthBefore, 回復後のヘルス: $healthAfter")
+            setCameraAppearance(entity,healthAfter)
+        }
+    }
+    @EventHandler
+    fun onPlayerDamage(event: EntityDamageEvent) {
+        val entity = event.entity
+        if (entity is Player) {
+            if(!isCamera(entity))
+                return
+            val damage = event.damage
+            val finalDamage = event.finalDamage
+            val healthBefore = entity.health
+            val healthAfter = (healthBefore - finalDamage).coerceAtLeast(0.0)
+            info("プレイヤー ${entity.name} がダメージを受けました: 総ダメージ=$damage, 最終ダメージ=$finalDamage health:${healthAfter}")
+
+            setCameraAppearance(entity,healthAfter)
         }
     }
 
