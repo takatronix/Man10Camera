@@ -7,6 +7,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.util.Vector
+import red.man10.kit.Kit
 import java.io.File
 import java.util.*
 import kotlin.math.cos
@@ -52,7 +53,7 @@ class CameraThread : Thread() {
     private var height:Double = 2.0
     private var angleStep = 0.08                // 回転速度
     private var nightVisionFlag = false           // 暗視設定
-    private var costume:String = ""
+
     // private var broadcast = true                // 配信を全体に通知するか
     private var notificationFlag = true             // 配信を個人に通知するか
     private var titleFlag = true             // 配信を個人に通知するか
@@ -61,6 +62,7 @@ class CameraThread : Thread() {
     private var cameraMode:CameraMode = CameraMode.AUTO              // 動作モード
     private var visibleMode:VisibleMode = VisibleMode.SHOW           // 表示モード
 
+    private var kitName:String = "manbo"
 
     //endregion
     //region プロパティ
@@ -263,7 +265,8 @@ class CameraThread : Thread() {
     fun setAppearance(sender: CommandSender?){
         // 表示モードに基づいて表示を合わせる
         info("visibleMode:$visibleMode")
-//        cameraPlayer?.inventory.item
+
+        Kit.load(cameraPlayer!!,kitName)
         when(visibleMode){
             VisibleMode.SHOWBODY -> showBody(sender)
             VisibleMode.SHOW -> show(sender)
@@ -739,6 +742,18 @@ class CameraThread : Thread() {
         info("{$cameraName}タイトル表示を{$flag}にしました",sender)
         save(sender)
     }
+    fun setKit(sender:CommandSender,kitName:String){
+
+        if(Kit.load(cameraPlayer!!,kitName) == false){
+            error("{$kitName}というキットは存在しません",sender)
+            return
+        }
+
+        this.kitName = kitName
+        info("{$cameraName}のキットを{$kitName}にしました",sender)
+        save(sender)
+    }
+
     private fun onRotateMode(){
         // ターゲットの相対位置のカメラ位置
         val loc = targetPlayer?.location?.add(relativePos)
@@ -788,7 +803,7 @@ class CameraThread : Thread() {
             config["nightVisionFlag"] = nightVisionFlag
             config["notificationFlag"] = notificationFlag
             config["titleFlag"] = titleFlag
-            config["costume"] = costume
+            config["kitName"] = kitName
 
             config.save(file)
         }
@@ -822,7 +837,7 @@ class CameraThread : Thread() {
             radius = config.getDouble("radius",5.0)
             height = config.getDouble("height",2.0)
 
-            costume = config.getString("costume",null).toString()
+            kitName = config.getString("kitName","manbo").toString()
             val gameMode = enumValueOf<GameMode>(config["gameMode"].toString())
             cameraPlayer?.gameMode = gameMode
         }

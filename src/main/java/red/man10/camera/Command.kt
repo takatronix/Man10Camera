@@ -214,6 +214,7 @@ object Command : CommandExecutor, TabCompleter {
             "nightvision" -> setNightVision(label,sender,name)
             "notification" -> setNotification(label,sender,name)
             "title" -> setTitleFlag(label,sender,name)
+            "kit" -> getCamera(label).setKit(sender,name)
         }
     }
     private fun kit(label:String,sender: CommandSender,args: Array<out String>){
@@ -446,6 +447,7 @@ object Command : CommandExecutor, TabCompleter {
             else -> getCamera(label).setTitleFlag(sender,false)
         }
     }
+
     // ヘルプメッセージ
     private fun showHelp(label:String,sender: CommandSender){
         sender.sendMessage("§b===============[Man10 Camera System ver.${Main.version}]====================")
@@ -553,7 +555,11 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
 
     private fun onTabSet(args: Array<out String>?) : List<String>?{
         if(args?.size == 2)
-            return listOf("target","camera","position","radius","height","nightvision","notification","title")
+            return listOf("target","camera","position","radius","height","nightvision","notification","title","kit")
+        if(args?.size == 3){
+            if(args[1] == "kit")
+                return Kit.getList()
+        }
         return null
     }
     private fun onTabKit(args: Array<out String>?,alias: String) : List<String>?{
