@@ -216,6 +216,16 @@ object Command : CommandExecutor, TabCompleter {
             showHelp(label,sender)
             return
         }
+
+        // カメラの場合は、カメラのプレイヤーにキットを適用
+        if(label != "mc"){
+            val kit = args[1]
+            getCamera(label).cameraPlayer?.let { Kit.load(it,kit) }
+            getCamera(label).show(sender)
+            return
+        }
+
+
         val key = args[1]
         if(args.size == 2){
             when(key){
@@ -228,9 +238,6 @@ object Command : CommandExecutor, TabCompleter {
             "save" -> { Kit.save(sender,name) }
             "delete" -> { Kit.delete(sender,name) }
             "load" -> { Kit.load(sender,name) }
-            "set" -> {
-                getCamera(label).cameraPlayer?.let { Kit.load(it,name) }
-            }
         }
     }
     // 共通config
@@ -467,7 +474,7 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
         sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")
         sender.sendMessage("§a/$label hide       カメラを見せない(スペクテーター)")
-        sender.sendMessage("§a/$label kit set [name]  登録済みのkitを設定")
+        sender.sendMessage("§a/$label kit [name]  登録済みのkitを設定")
 
 
         sender.sendMessage("§c[外見制御]")
@@ -528,7 +535,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         }
         when(args?.get(0)){
             "set" -> return onTabSet(args)
-            "kit" -> return onTabKit(args)
+            "kit" -> return onTabKit(args,alias)
             "config" -> return onTabConfig(args)
             "vision" -> return onTabVision(args)
         }
@@ -540,7 +547,10 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             return listOf("target","camera","position","radius","height","nightvision","notification","title")
         return null
     }
-    private fun onTabKit(args: Array<out String>?) : List<String>?{
+    private fun onTabKit(args: Array<out String>?,alias: String) : List<String>?{
+        if(alias != "mc"){
+            return Kit.getList()
+        }
         if(args?.size == 2)
             return listOf("list","save","load","delete")
         return null

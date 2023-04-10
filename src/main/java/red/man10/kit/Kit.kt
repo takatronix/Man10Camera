@@ -72,12 +72,11 @@ class Kit {
             info( "${kitName}キットを削除しました",p)
             return true
         }
-        //      キット一覧
-        fun showlist(p: CommandSender): Boolean {
+
+        fun getList(): List<String> {
             val folder = File(Main.plugin.dataFolder, File.separator + "kits")
-            p.sendMessage("§e§l========== 登録済みのキット =========")
-            var n = 1
             val files = folder.listFiles()
+            val list = mutableListOf<String>()
             for (f in files) {
                 if (f.isFile) {
                     var filename = f.name
@@ -89,15 +88,19 @@ class Kit {
                     if (point != -1) {
                         filename = filename.substring(0, point)
                     }
-                    p.sendMessage("§e§l$n: §f§l$filename")
-                    n++
+                    list.add(filename)
                 }
             }
-            if (files != null) {
-                if(files.isEmpty()){
-                    p.sendMessage("§e§l登録されているキットはありません")
-                }
+            return list
+        }
+
+        //      キット一覧
+        fun showlist(p: CommandSender): Boolean {
+            p.sendMessage("§e§l========== 登録済みのキット =========")
+            getList().forEachIndexed { index, s ->
+                p.sendMessage("§e§l${index+1}: §f§l$s")
             }
+            p.sendMessage("§e§l===================================")
             return true
         }
 
