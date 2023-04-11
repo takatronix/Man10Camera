@@ -402,9 +402,9 @@ fun getCamera(label:String="mc1"):CameraThread{
 fun getCamera(uuid:UUID):CameraThread?{
     return when(uuid){
         Main.mc1.uniqueId -> Main.mc1
-        Main.mc1.uniqueId -> Main.mc2
-        Main.mc1.uniqueId -> Main.mc3
-        Main.mc1.uniqueId -> Main.mc4
+        Main.mc2.uniqueId -> Main.mc2
+        Main.mc3.uniqueId -> Main.mc3
+        Main.mc4.uniqueId -> Main.mc4
         else -> null
     }
 }
