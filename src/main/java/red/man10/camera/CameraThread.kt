@@ -742,7 +742,7 @@ class CameraThread : Thread() {
         info("{$cameraName}タイトル表示を{$flag}にしました",sender)
         save(sender)
     }
-    fun setKit(sender:CommandSender,kitName:String){
+    fun setKit(sender:CommandSender,kitName:String,save:Boolean = true){
 
         if(Kit.load(cameraPlayer!!,kitName) == false){
             error("{$kitName}というキットは存在しません",sender)
@@ -751,7 +751,8 @@ class CameraThread : Thread() {
 
         this.kitName = kitName
         info("{$cameraName}のキットを{$kitName}にしました",sender)
-        save(sender)
+        if(save)
+          save(sender)
     }
 
     private fun onRotateMode(){

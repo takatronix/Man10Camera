@@ -226,8 +226,7 @@ object Command : CommandExecutor, TabCompleter {
         // カメラの場合は、カメラのプレイヤーにキットを適用
         if(label != "mc"){
             val kit = args[1]
-            getCamera(label).cameraPlayer?.let { Kit.load(it,kit) }
-            getCamera(label).show(sender)
+            getCamera(label).setKit(sender,kit,false)
             return
         }
 
@@ -398,7 +397,10 @@ object Command : CommandExecutor, TabCompleter {
         val player = getOnlinePlayer(sender,args[1])
         if(player != null){
             sender.sendMessage("${player.name}の追跡を開始")
+            return player
         }
+
+
         return player
     }
 
@@ -476,7 +478,9 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§a/$label set height [h]            カメラの高さを指定")
         sender.sendMessage("§a/$label set nightvision [on/off]  ナイトビジョン")
         sender.sendMessage("§a/$label set title [on/off]        タイトルテキストのon/off")
-        sender.sendMessage("§a/$label set message [on/off]      個人通知メッセージ")
+        sender.sendMessage("§a/$label set notification [on/off] 通知メッセージ")
+        sender.sendMessage("§a/$label set kit [name]            デフォルトキット登録")
+
         sender.sendMessage("§b[表示モード設定]")
         sender.sendMessage("§a/$label showbody   カメラの状態のボディをみせる(クリエイティブ)")
         sender.sendMessage("§a/$label show       カメラをインビジブル状態(クリエイティブ)")

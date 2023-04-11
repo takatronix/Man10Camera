@@ -164,8 +164,10 @@ class Main : JavaPlugin() ,Listener {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             if (player != null) {
                 sendBungeeMessage(commandSender!!, " &a&l" + player.name + bungeeLiveMessage)
-                getCamera(1).backView(null, player)
 
+
+
+                getCamera(1).backView(null, player)
                 // 3秒後にクローンモードに切り替え
                 Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
                     getCamera(1).clone(null, player)
@@ -267,16 +269,7 @@ class Main : JavaPlugin() ,Listener {
         e.player.gameMode = GameMode.SURVIVAL
     }
 
-    // 銃や弓などのダメージイベント
-    @EventHandler
-    fun onEntityDamage(e: EntityDamageByEntityEvent) {
-        if (e.damager is Projectile && e.entity is Player) {
-            //make sure the damager is a snowball & the damaged entity is a Player
-            val shooter: ProjectileSource = (e.damager as Projectile).shooter as? Player ?: return
-            val p = shooter as Player
 
-        }
-    }
 
     fun setCameraAppearance(player: Player,health : Double) {
         if(health > 17)
@@ -314,6 +307,17 @@ class Main : JavaPlugin() ,Listener {
             setCameraAppearance(entity,healthAfter)
         }
     }
+
+    // 銃や弓などのダメージイベント
+    @EventHandler
+    fun onEntityDamage(e: EntityDamageByEntityEvent) {
+        if (e.damager is Projectile && e.entity is Player) {
+            //make sure the damager is a snowball & the damaged entity is a Player
+            val shooter: ProjectileSource = (e.damager as Projectile).shooter as? Player ?: return
+            val p = shooter as Player
+            info("onEntityDamage プレイヤー ${p.name} がダメージを与えました: ${e.damage}")
+        }
+    }
     @EventHandler
     fun onPlayerDamage(event: EntityDamageEvent) {
         val entity = event.entity
@@ -324,7 +328,7 @@ class Main : JavaPlugin() ,Listener {
             val finalDamage = event.finalDamage
             val healthBefore = entity.health
             val healthAfter = (healthBefore - finalDamage).coerceAtLeast(0.0)
-            info("プレイヤー ${entity.name} がダメージを受けました: 総ダメージ=$damage, 最終ダメージ=$finalDamage health:${healthAfter}")
+            info("onPlayerDamage プレイヤー ${entity.name} がダメージを受けました: 総ダメージ=$damage, 最終ダメージ=$finalDamage health:${healthAfter}")
 
             setCameraAppearance(entity,healthAfter)
         }
