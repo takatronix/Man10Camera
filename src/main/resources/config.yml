@@ -1,4 +1,4 @@
-serverName: ''
+serverName: 'xlab'
 broadcast: false
 switchTime: 60
 servers:
@@ -7,7 +7,6 @@ servers:
   - casino
   - login
   - market
-
 mc1:
   camera: camera1
 mc2:

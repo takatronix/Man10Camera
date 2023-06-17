@@ -7,7 +7,6 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.util.Vector
-import red.man10.kit.Kit
 import java.io.File
 import java.util.*
 import kotlin.math.cos
@@ -266,7 +265,7 @@ class CameraThread : Thread() {
         // 表示モードに基づいて表示を合わせる
         info("visibleMode:$visibleMode")
 
-        Kit.load(cameraPlayer!!,kitName)
+        KitManager.load(cameraPlayer!!,kitName)
         when(visibleMode){
             VisibleMode.SHOWBODY -> showBody(sender)
             VisibleMode.SHOW -> show(sender)
@@ -744,7 +743,7 @@ class CameraThread : Thread() {
     }
     fun setKit(sender:CommandSender,kitName:String,save:Boolean = true){
 
-        if(Kit.load(cameraPlayer!!,kitName) == false){
+        if(KitManager.load(cameraPlayer!!,kitName) == false){
             error("{$kitName}というキットは存在しません",sender)
             return
         }

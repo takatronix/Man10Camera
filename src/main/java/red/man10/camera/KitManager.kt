@@ -1,17 +1,13 @@
-package red.man10.kit
+package red.man10.camera
 
-import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import red.man10.camera.Main
-import red.man10.camera.info
 import java.io.File
 
-class Kit {
-
+class KitManager {
     companion object{
 
         //      キットを保存する
@@ -31,7 +27,7 @@ class Kit {
                     data.save(f)
                     info( "キットを保存しました:$kitName",p)
                 } catch (exception: Exception) {
-                    error("キットの保存に失敗した" + exception.message)
+                    error("キットの保存に失敗した" + exception.message,p)
                 }
             }
             return true
@@ -61,8 +57,7 @@ class Kit {
 
             return true
         }
-        fun delete(p: CommandSender, kitName: String): Boolean {
-            val userdata = File(Main.plugin.dataFolder, File.separator + "kits")
+        fun delete(p: CommandSender, kitName: String): Boolean {val userdata = File(Main.plugin.dataFolder, File.separator + "kits")
             val f = File(userdata, File.separator + kitName + ".yml")
             if (!f.exists()) {
                 p.sendMessage("キットは存在しない:$kitName")
@@ -95,7 +90,7 @@ class Kit {
         }
 
         //      キット一覧
-        fun showlist(p: CommandSender): Boolean {
+        fun showList(p: CommandSender): Boolean {
             p.sendMessage("§e§l========== 登録済みのキット =========")
             getList().forEachIndexed { index, s ->
                 p.sendMessage("§e§l${index+1}: §f§l$s")
@@ -103,10 +98,6 @@ class Kit {
             p.sendMessage("§e§l===================================")
             return true
         }
-
-
     }
-
-
 
 }

@@ -3,16 +3,12 @@ package red.man10.camera
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.Location
-import org.bukkit.World
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.*
-import org.bukkit.potion.PotionEffect
-import org.bukkit.potion.PotionEffectType
 import org.bukkit.util.Vector
-import red.man10.kit.Kit
 
 
 object Command : CommandExecutor, TabCompleter {
@@ -38,6 +34,7 @@ object Command : CommandExecutor, TabCompleter {
             "help" -> showHelp(label,sender)
             "set" -> set(label,sender,args)
             "kit" -> kit(label,sender,args)
+            "location" -> location(label,sender,args)
             "follow" -> follow(label,sender,args)
             "back" -> back(label,sender,args)
             "face" -> face(label,sender,args)
@@ -234,15 +231,36 @@ object Command : CommandExecutor, TabCompleter {
         val key = args[1]
         if(args.size == 2){
             when(key){
-                "list" -> { Kit.showlist(sender) }
+                "list" -> { KitManager.showList(sender) }
             }
             return
         }
         val name = args[2]
         when(key) {
-            "save" -> { Kit.save(sender,name) }
-            "delete" -> { Kit.delete(sender,name) }
-            "load" -> { Kit.load(sender,name) }
+            "save" -> { KitManager.save(sender,name) }
+            "delete" -> { KitManager.delete(sender,name) }
+            "load" -> { KitManager.load(sender,name) }
+        }
+    }
+    private fun location(label:String,sender: CommandSender,args: Array<out String>){
+
+        if(label != "mc"){
+            return
+        }
+
+
+        val key = args[1]
+        if(args.size == 2){
+            when(key){
+                "list" -> { Main.locationManager.showList(sender) }
+            }
+            return
+        }
+        val name = args[2]
+        when(key) {
+            "save" -> { Main.locationManager.addLocation(sender as Player,name) }
+            "delete" -> { Main.locationManager.deleteLocation(sender as Player,name) }
+            "tp" -> { Main.locationManager.teleport(sender,sender,name) }
         }
     }
     // 共通config
@@ -494,6 +512,10 @@ object Command : CommandExecutor, TabCompleter {
         sender.sendMessage("§c/mc kit load [name]   登録済みのkitを設定(自分に)")
         sender.sendMessage("§c/mc kit delete [name] 登録済みのkitを削除")
 
+        sender.sendMessage("§c[位置保存]")
+        sender.sendMessage("§c/mc location save [name]     場所を保存")
+        sender.sendMessage("§c/mc location delete [name]   場所を削除")
+        sender.sendMessage("§c/mc location 場所リストを表示")
 
         sender.sendMessage("§c[共通制御]")
         sender.sendMessage("§c/mc auto              自動モード切替")
@@ -546,11 +568,12 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         }
 
         if(args?.size == 1){
-            return listOf("set","config","follow","rotate","clone","back","backview","kit","tp","look","spectate","stop","front","face","show","showbody","hide","live","auto","server","switch","vision","freeze","movie")
+            return listOf("set","config","follow","rotate","clone","back","backview","kit","tp","look","spectate","stop","front","face","show","showbody","hide","live","auto","server","switch","vision","freeze","movie","location")
         }
         when(args?.get(0)){
             "set" -> return onTabSet(args)
             "kit" -> return onTabKit(args,alias)
+            "location" -> return onTabLocation(args,alias)
             "config" -> return onTabConfig(args)
             "vision" -> return onTabVision(args)
         }
@@ -562,16 +585,28 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             return listOf("target","camera","position","radius","height","nightvision","notification","title","kit")
         if(args?.size == 3){
             if(args[1] == "kit")
-                return Kit.getList()
+                return KitManager.getList()
         }
         return null
     }
     private fun onTabKit(args: Array<out String>?,alias: String) : List<String>?{
         if(alias != "mc"){
-            return Kit.getList()
+            return KitManager.getList()
         }
         if(args?.size == 2)
             return listOf("list","save","load","delete")
+        return null
+    }
+    private fun onTabLocation(args: Array<out String>?,alias: String) : List<String>?{
+        if(alias != "mc"){
+            return Main.locationManager.getList()
+        }
+
+        if(args?.size == 2)
+            return listOf("list","save","teleport","delete")
+
+        if(args?.size ==3)
+            return Main.locationManager.getList()
         return null
     }
     private fun onTabConfig(args: Array<out String>?) : List<String>?{

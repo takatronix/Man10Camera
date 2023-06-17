@@ -16,7 +16,6 @@ import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
 import org.bukkit.scheduler.BukkitRunnable
-import red.man10.kit.Kit
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
@@ -45,7 +44,8 @@ class Main : JavaPlugin() ,Listener {
         var mc3 = CameraThread()
         var mc4 = CameraThread()
 
-        var kit = Kit()
+        var kitManager = KitManager()
+        var locationManager = LocationManager()
 
         // プレイヤーの統計データ
         var playerMap = ConcurrentHashMap<UUID, PlayerData>()
@@ -66,6 +66,10 @@ class Main : JavaPlugin() ,Listener {
 
         getCommand("mc")!!.setExecutor(Command)
         getCommand("manbo")!!.setExecutor(Command)
+
+
+        locationManager.name = "test";
+        locationManager.load()
 
         // カメラスレッド生成
         for (no in 1..cameraCount) {
@@ -167,11 +171,12 @@ class Main : JavaPlugin() ,Listener {
 
 
 
-                getCamera(1).backView(null, player)
+                getCamera(1).rotate(null, player)
+
                 // 3秒後にクローンモードに切り替え
-                Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
-                    getCamera(1).clone(null, player)
-                }, 20L * 3)
+                //Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+                //    getCamera(1).clone(null, player)
+                //}, 20L * 3)
             }
 
         })
@@ -210,7 +215,7 @@ class Main : JavaPlugin() ,Listener {
             if (entity.uniqueId == getCamera(no).uniqueId) {
                 e.isCancelled = true
                 entity.sendMessage("カメラプレイヤーにされているため死亡をキャンセルしました")
-                Kit.load(entity, "manbo")
+                KitManager.load(entity, "manbo")
             }
         }
     }
@@ -258,6 +263,8 @@ class Main : JavaPlugin() ,Listener {
                 cam?.setAppearance(null)
             }, 20L * 1)
         } else {
+            if(e.player.isOp)
+                return
             e.player.gameMode = GameMode.SURVIVAL
         }
     }
@@ -273,21 +280,21 @@ class Main : JavaPlugin() ,Listener {
 
     fun setCameraAppearance(player: Player,health : Double) {
         if(health > 17)
-            Kit.load(player, "manbo")
+            KitManager.load(player, "manbo")
         else if(health > 14.5)
-            Kit.load(player, "love")
+            KitManager.load(player, "love")
         else if(health > 12)
-            Kit.load(player, "question")
+            KitManager.load(player, "question")
         else if(health > 9.5)
-            Kit.load(player, "shock")
+            KitManager.load(player, "shock")
         else if(health > 7)
-            Kit.load(player, "angry")
+            KitManager.load(player, "angry")
         else if(health > 5)
-            Kit.load(player, "cry")
+            KitManager.load(player, "cry")
         else if(health > 2.5)
-            Kit.load(player, "sleep")
+            KitManager.load(player, "sleep")
         else
-            Kit.load(player, "death")
+            KitManager.load(player, "death")
 
 
     }
