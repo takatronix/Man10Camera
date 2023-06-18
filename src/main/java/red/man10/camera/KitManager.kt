@@ -16,7 +16,7 @@ class KitManager {
                 p.sendMessage("プレイヤーのみ実行できます")
                 return false
             }
-            val userdata = File(Main.plugin.dataFolder, File.separator + "kits")
+            val userdata = File(Main.plugin!!.dataFolder, File.separator + "kits")
             val f = File(userdata, File.separator + kitName + ".yml")
             val data: FileConfiguration = YamlConfiguration.loadConfiguration(f)
             if (!f.exists()) {
@@ -39,7 +39,7 @@ class KitManager {
                 p.sendMessage("プレイヤーのみ実行できます")
                 return false
             }
-            val userdata = File(Main.plugin.dataFolder, File.separator + "kits")
+            val userdata = File(Main.plugin!!.dataFolder, File.separator + "kits")
             val f = File(userdata, File.separator + kitName + ".yml")
             val data: FileConfiguration = YamlConfiguration.loadConfiguration(f)
             if (!f.exists()) {
@@ -57,7 +57,7 @@ class KitManager {
 
             return true
         }
-        fun delete(p: CommandSender, kitName: String): Boolean {val userdata = File(Main.plugin.dataFolder, File.separator + "kits")
+        fun delete(p: CommandSender, kitName: String): Boolean {val userdata = File(Main.plugin!!.dataFolder, File.separator + "kits")
             val f = File(userdata, File.separator + kitName + ".yml")
             if (!f.exists()) {
                 p.sendMessage("キットは存在しない:$kitName")
@@ -69,7 +69,7 @@ class KitManager {
         }
 
         fun getList(): List<String> {
-            val folder = File(Main.plugin.dataFolder, File.separator + "kits")
+            val folder = File(Main.plugin!!.dataFolder, File.separator + "kits")
             val files = folder.listFiles()
             val list = mutableListOf<String>()
             for (f in files) {

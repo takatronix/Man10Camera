@@ -12,7 +12,10 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.*
 import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.player.*
+import org.bukkit.event.player.PlayerFishEvent
+import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerMoveEvent
+import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
 import org.bukkit.scheduler.BukkitRunnable
@@ -20,10 +23,11 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 
-
 class Main : JavaPlugin() ,Listener {
 
     private val teleportTasks = mutableMapOf<Player, TeleportTask>()
+
+
 
     companion object {
         val version = "2023/4/10"
@@ -44,8 +48,11 @@ class Main : JavaPlugin() ,Listener {
         var mc3 = CameraThread()
         var mc4 = CameraThread()
 
-        var kitManager = KitManager()
-        var locationManager = LocationManager()
+        var kitManager: KitManager = KitManager()
+        lateinit var locationManager : LocationManager
+        lateinit var mapManager: MapManager
+        var videoCapture: VideoCapture? = null
+
 
         // プレイヤーの統計データ
         var playerMap = ConcurrentHashMap<UUID, PlayerData>()
@@ -60,6 +67,10 @@ class Main : JavaPlugin() ,Listener {
 
     override fun onEnable() {
         plugin = this
+        locationManager = LocationManager()
+        mapManager = MapManager()
+
+
         saveDefaultConfig()
         configData = loadConfigData(config)
         showConfigData()
@@ -67,9 +78,16 @@ class Main : JavaPlugin() ,Listener {
         getCommand("mc")!!.setExecutor(Command)
         getCommand("manbo")!!.setExecutor(Command)
 
-
-        locationManager.name = "test";
+        mapManager.init()
         locationManager.load()
+
+        videoCapture = VideoCapture(
+            this,
+            configData.vcWidth,
+            configData.vcHeight,
+        )
+        videoCapture?.start()
+
 
         // カメラスレッド生成
         for (no in 1..cameraCount) {
@@ -111,9 +129,8 @@ class Main : JavaPlugin() ,Listener {
             }
         }, 0L, 1L)
 
+        Bukkit.getServer().pluginManager.registerEvents(this,this)
 
-
-        plugin.server.pluginManager.registerEvents(this, plugin)
         info("Man10 Camera Plugin Enabled")
     }
 
@@ -164,7 +181,7 @@ class Main : JavaPlugin() ,Listener {
         activeList.shuffle()
 
         // 次の表示対象
-        Bukkit.getScheduler().runTask(plugin, Runnable {
+        Bukkit.getScheduler().runTask(this, Runnable {
             val player = Bukkit.getPlayer(activeList[0].uuid!!)
             if (player != null) {
                 sendBungeeMessage(commandSender!!, " &a&l" + player.name + bungeeLiveMessage)
@@ -189,6 +206,8 @@ class Main : JavaPlugin() ,Listener {
         for (no in 1..cameraCount) {
             getCamera(no).running = false
         }
+
+        videoCapture?.cleanup()
     }
 
     fun test() {
@@ -256,7 +275,7 @@ class Main : JavaPlugin() ,Listener {
         if (isCamera(e.player)) {
             taskSwitchCount = 3
 
-            Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+            Bukkit.getScheduler().runTaskLater(this, Runnable {
                 // ログインしたのがカメラプレイヤーなら外見を設定する
                 val cam = getCamera(e.player.uniqueId)
                 info("camera ${cam?.cameraPlayer?.name} logged in")
@@ -340,7 +359,6 @@ class Main : JavaPlugin() ,Listener {
             setCameraAppearance(entity,healthAfter)
         }
     }
-
 
     //endregion
     private inner class TeleportTask(
@@ -461,15 +479,61 @@ private fun isTarget(player:Player?):Boolean{
 //endregion
 
 fun loadConfigData(config: FileConfiguration): ConfigData {
-    return ConfigData(
+    val ret = ConfigData(
         broadcast = config.getBoolean("broadcast", false),
-        switchTime = config.getInt("switchTime",30)
+        switchTime = config.getInt("switchTime",30),
+        mapMode = config.getInt("mapMode",2),
+        streamPort = config.getInt("streamPort",1337),
     )
+
+    updateMapData(ret.mapMode,ret)
+
+    return ret
+}
+
+private fun updateMapData(map_mode: Int, data:ConfigData) {
+    when (map_mode) {
+        1 -> {
+            data.mapSize = 2
+            data.mapWidth = 2
+            data.vcWidth = 128 * 2
+            data.vcHeight = 128
+        }
+
+        2 -> {
+            data.mapSize = 8
+            data.mapWidth = 4
+            data.vcWidth = 128 * 4
+            data.vcHeight = 128 * 2
+        }
+
+        3 -> {
+            data.mapSize = 32
+            data.mapWidth = 8
+            data.vcWidth = 128 * 8
+            data.vcHeight = 128 * 4
+        }
+
+        4 -> {
+            data.mapSize = 128
+            data.mapWidth = 16
+            data.vcWidth = 128 * 16
+            data.vcHeight = 128 * 8
+        }
+
+        5 -> {
+            data.mapSize = 512
+            data.mapWidth = 32
+            data.vcWidth = 128 * 32
+            data.vcHeight = 128 * 16
+        }
+    }
 }
 fun saveConfigData(configData: ConfigData) {
     Main.plugin.config.set("broadcast", configData.broadcast)
     Main.plugin.config.set("switchTime",configData.switchTime)
     Main.plugin.saveConfig()
+
     showConfigData()
 }
 fun showConfigData(sender:CommandSender? = null){

@@ -109,7 +109,7 @@ class CameraThread : Thread() {
         info("Camera thread started:${cameraLabel}")
         while(running){
             sleep(wait)
-            Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
                 sendActionText(cameraPlayer,actionText)
             })
 
@@ -117,7 +117,7 @@ class CameraThread : Thread() {
                 continue
 
             // カメラがブロックとかさなっているか検出
-            Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+            Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
                 val isInBlock = isInBlock()
                 if(isInBlockLast != isInBlock){
                     if(isInBlock){
@@ -162,7 +162,7 @@ class CameraThread : Thread() {
         if(visibleMode == VisibleMode.HIDE)
             return
 
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             cameraPlayer?.gameMode = GameMode.SPECTATOR
         })*/
     }
@@ -172,7 +172,7 @@ class CameraThread : Thread() {
         if(visibleMode == VisibleMode.HIDE)
             return
 
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             cameraPlayer?.gameMode = GameMode.CREATIVE
         })*/
     }
@@ -192,7 +192,7 @@ class CameraThread : Thread() {
             cameraPlayer?.sendTitle(title,subtitle,fadeIn,stay,fadeOut)
     }
     fun sendTitle(title:String, subtitle:String="",time:Double = 3.0){
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             val tick = time * 20
             cameraPlayer?.sendTitle(title.replace("&","§"),subtitle.replace("&","§"),10,tick.toInt(),10)
         })
@@ -201,7 +201,7 @@ class CameraThread : Thread() {
 
         this.actionText = text.replace("&","§")
         val tick = time * 20
-        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable { actionText = ""}, tick.toLong())
+        Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable { actionText = ""}, tick.toLong())
     }
 
 
@@ -239,7 +239,7 @@ class CameraThread : Thread() {
         cameraMode = mode
 
         // クリエイティブとスペクテーターを切り替えてスペクテーターターゲットを外す
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             when (mode) {
                 CameraMode.CLONE -> {
                     cameraPlayer?.gameMode = GameMode.SURVIVAL
@@ -448,8 +448,8 @@ class CameraThread : Thread() {
 
         showCamera()
         // targetにCameraをうつさないようにする
-        targetPlayer?.hidePlayer(Main.plugin,cameraPlayer!!)
-        cameraPlayer?.hidePlayer(Main.plugin,targetPlayer!!)
+        targetPlayer?.hidePlayer(Main.plugin!!,cameraPlayer!!)
+        cameraPlayer?.hidePlayer(Main.plugin!!,targetPlayer!!)
         info("${player!!.name}をクローンモードに設定",sender)
         notifyUsers(Main.liveMessage,sender,player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
@@ -457,15 +457,15 @@ class CameraThread : Thread() {
 
     fun showCamera(){
         Bukkit.getOnlinePlayers().forEach { p ->
-            p.showPlayer(Main.plugin,cameraPlayer!!)
-            cameraPlayer?.showPlayer(Main.plugin,p)
+            p.showPlayer(Main.plugin!!,cameraPlayer!!)
+            cameraPlayer?.showPlayer(Main.plugin!!,p)
         }
     }
 
     fun hideCamera(){
         Bukkit.getOnlinePlayers().forEach { p ->
-            p.hidePlayer(Main.plugin,cameraPlayer!!)
-            cameraPlayer?.hidePlayer(Main.plugin,p)
+            p.hidePlayer(Main.plugin!!,cameraPlayer!!)
+            cameraPlayer?.hidePlayer(Main.plugin!!,p)
         }
     }
     fun spectate(sender: CommandSender?, player:Player? = null){
@@ -553,7 +553,7 @@ class CameraThread : Thread() {
     }
     private fun onSpectatorMode(){
 
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             var camera = cameraPlayer
             var target = targetPlayer
             if (camera == null)
@@ -674,7 +674,7 @@ class CameraThread : Thread() {
         val dir = targetPos?.subtract(pos!!)
        // loc?.direction = dir!!
 
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
 
             val content = targetPlayer?.inventory?.contents
             (content as Array<out ItemStack>?)?.let { cameraPlayer?.inventory?.setContents(it) }
@@ -780,7 +780,7 @@ class CameraThread : Thread() {
     }
     // テレポートする
     private fun teleport(loc:Location?){
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             val camera = cameraPlayer
             if(loc != null && camera != null && camera.isOnline){
                 camera.teleport(loc)
@@ -789,7 +789,7 @@ class CameraThread : Thread() {
     }
     //region ファイル管理
     private fun save(sender:CommandSender?=null): Boolean {
-        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraLabel.yml")
+        val file = File(Main.plugin!!.dataFolder, "camera${File.separator}$cameraLabel.yml")
         info("saving ${file.absolutePath}")
         try{
             val config = YamlConfiguration.loadConfiguration(file)
@@ -816,7 +816,7 @@ class CameraThread : Thread() {
     }
 
     fun load(sender:CommandSender? = null): Boolean {
-        val file = File(Main.plugin.dataFolder, "camera${File.separator}$cameraLabel.yml")
+        val file = File(Main.plugin!!.dataFolder, "camera${File.separator}$cameraLabel.yml")
         info("loading ${file.absolutePath}")
         try{
             val config = YamlConfiguration.loadConfiguration(file)
@@ -850,7 +850,7 @@ class CameraThread : Thread() {
 
     // 設定ファイルを削除
     companion object fun deleteFile(sender: CommandSender?,folder:String, name: String): Boolean {
-        val file = File(Main.plugin.dataFolder, "$folder${File.separator}$name.yml")
+        val file = File(Main.plugin!!.dataFolder, "$folder${File.separator}$name.yml")
         if (file.delete()) {
             info("${name}を削除しました",sender)
         } else {

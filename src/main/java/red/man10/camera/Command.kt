@@ -1,15 +1,22 @@
 package red.man10.camera
 
 import org.bukkit.Bukkit
+import org.bukkit.Bukkit.getServer
 import org.bukkit.GameMode
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.*
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.MapMeta
+import org.bukkit.map.MapView
 import org.bukkit.util.Vector
+import red.man10.camera.VideoCapture.screens
 
+const val BUFFER_MAP_COUNT = 11 // Odd number
 
 object Command : CommandExecutor, TabCompleter {
 
@@ -31,6 +38,8 @@ object Command : CommandExecutor, TabCompleter {
         }
 
         when(args[0]){
+            "map"-> map(label,sender,args)
+            "mapauto"-> map(label,sender,args)
             "help" -> showHelp(label,sender)
             "set" -> set(label,sender,args)
             "kit" -> kit(label,sender,args)
@@ -124,7 +133,7 @@ object Command : CommandExecutor, TabCompleter {
         // カメラを停止し、遅延後、TPを行う
         getCamera(label).changeMode(CameraMode.STOP)
 
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             val w = wxyzyp[0]
             val x = wxyzyp[1].toDouble()
             val y = wxyzyp[2].toDouble()
@@ -347,10 +356,10 @@ object Command : CommandExecutor, TabCompleter {
                     p.teleport(loc)
 
                 Bukkit.getOnlinePlayers().forEach { p2 ->
-                    p.hidePlayer(Main.plugin,p2)
+                    p.hidePlayer(Main.plugin!!,p2)
                 }
                 //
-                Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+                Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
                   //  p.gameMode = current
                     p.gameMode = GameMode.SURVIVAL
                     p.teleport(pastLocation)
@@ -359,11 +368,11 @@ object Command : CommandExecutor, TabCompleter {
         }
 
 
-        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
             mob?.remove()
             Bukkit.getOnlinePlayers().forEach { p ->
                 Bukkit.getOnlinePlayers().forEach { p2 ->
-                    p.showPlayer(Main.plugin, p2)
+                    p.showPlayer(Main.plugin!!, p2)
                 }
             }
 
@@ -386,7 +395,7 @@ object Command : CommandExecutor, TabCompleter {
         if(args.size >= 5)
             subtext = args[4]
 
-        Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             val tick = sec * 20
             val p = Bukkit.getPlayer(mcid)
             p?.sendTitle(message.replace("&","§"),subtext.replace("&","§"),10,tick.toInt(),10)
@@ -641,7 +650,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         // 戻るべき座標
         val pastLocation: Location = p.location.clone()
 
-        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
             val directionVector: Vector = p.location.subtract(pastLocation).toVector()
             if (directionVector.length().toInt() != 0)
                 armorStand.velocity = directionVector.normalize().multiply(Math.sqrt(pastLocation.distance(p.location)))
@@ -652,7 +661,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             armorStand.setRotation(p.location.yaw, p.location.pitch)
 
             p.spectatorTarget = armorStand
-            Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+            Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
                 p.teleport(pastLocation)
                 p.gameMode = current
                 armorStand.remove()
@@ -719,9 +728,9 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             finalView.teleport(loc)
         else
             finalView.teleport(p.location)
-        Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+        Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
             val pastLocation: Location = p.location
-            Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+            Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
                 val directionVector: Vector = p.location.subtract(pastLocation).toVector()
                 if (directionVector.length().toInt() != 0)
                     finalView.velocity = directionVector.normalize().multiply(Math.sqrt(pastLocation.distance(p.location)))
@@ -733,7 +742,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
                 p.gameMode = GameMode.SPECTATOR
                 finalView.setRotation(p.location.yaw, p.location.pitch)
                 p.spectatorTarget = finalView
-                Bukkit.getScheduler().runTaskLater(Main.plugin, Runnable {
+                Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
                     p.gameMode = current
                     p.teleport(pastLocation)
                     finalView.remove()
@@ -741,5 +750,66 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             }, 2)
         }, 1)
         return true
+    }
+
+    private fun map(label:String,sender: CommandSender,args: Array<out String>){
+        val player = sender as Player
+        var x = 0
+        var y = 0
+
+        val command = args[0]
+
+        for (i in 0 until Main.configData.mapSize) {
+            var mapView: MapView? = null
+
+            // Check for existing maps
+            for (screenPart in screens) {
+                if (screenPart.partId == i) {
+                    mapView = getServer().getMap(screenPart.mapId)
+                }
+            }
+
+            // Create new map if none exists
+            if (mapView == null) {
+                mapView = getServer().createMap(player.world)
+                for (j in 0 until BUFFER_MAP_COUNT - 1) getServer().createMap(player.world) // Create extra buffer maps
+                screens.add(ScreenPart(mapView.id, i))
+            }
+            mapView.scale = MapView.Scale.CLOSEST
+            mapView.isUnlimitedTracking = true
+            for (renderer in mapView.renderers) {
+                mapView.removeRenderer(renderer)
+            }
+            val itemStack = ItemStack(Material.FILLED_MAP)
+            val mapMeta = itemStack.itemMeta as MapMeta
+            mapMeta.setMapView(mapView)
+            itemStack.setItemMeta(mapMeta)
+            val manager = Main.mapManager
+
+            manager.saveImage(mapView.id, i)
+
+            // mapautoなら目の前に配置
+            if (command == "mapauto") {
+                var location = player.getTargetBlock(10)!!.location
+                val facing = player.getTargetBlockFace(10)!!.oppositeFace
+                location = location.add(
+                    facing.oppositeFace.modX.toDouble(),
+                    facing.oppositeFace.modY.toDouble(),
+                    facing.oppositeFace.modZ.toDouble()
+                )
+                location = location.add((-x * facing.modZ).toDouble(), -y.toDouble(), (x * facing.modX).toDouble())
+                val itemFrame: ItemFrame = player.world.spawn(location, GlowItemFrame::class.java)
+                itemFrame.isVisible = false
+                itemFrame.setFacingDirection(facing.oppositeFace)
+                itemFrame.setItem(itemStack)
+            } else {
+                player.world.dropItem(player.location, itemStack)
+            }
+            x++
+            if (x >= Main.configData.mapWidth) {
+                x = 0
+                y++
+            }
+        }
     }
 }

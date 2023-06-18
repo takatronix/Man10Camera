@@ -41,7 +41,7 @@ public class LocationManager {
     }
 
     public fun save() {
-        val userdata = File(Main.plugin.dataFolder, File.separator + "locations")
+        val userdata = File(Main.plugin!!.dataFolder, File.separator + "locations")
         val filePath = File(userdata, File.separator + name + ".yml")
         filePath.delete()
         filePath.createNewFile()
@@ -57,7 +57,7 @@ public class LocationManager {
         config.save(filePath)
     }
     public fun load(): Boolean {
-        val userdata = File(Main.plugin.dataFolder, File.separator + "locations")
+        val userdata = File(Main.plugin!!.dataFolder, File.separator + "locations")
         val filePath = File(userdata, File.separator + name + ".yml")
         if (!filePath.exists())
             return false
