@@ -38,8 +38,6 @@ object Command : CommandExecutor, TabCompleter {
         }
 
         when(args[0]){
-            "map"-> map(label,sender,args)
-            "mapauto"-> map(label,sender,args)
             "help" -> showHelp(label,sender)
             "set" -> set(label,sender,args)
             "kit" -> kit(label,sender,args)
@@ -752,64 +750,4 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         return true
     }
 
-    private fun map(label:String,sender: CommandSender,args: Array<out String>){
-        val player = sender as Player
-        var x = 0
-        var y = 0
-
-        val command = args[0]
-
-        for (i in 0 until Main.configData.mapSize) {
-            var mapView: MapView? = null
-
-            // Check for existing maps
-            for (screenPart in screens) {
-                if (screenPart.partId == i) {
-                    mapView = getServer().getMap(screenPart.mapId)
-                }
-            }
-
-            // Create new map if none exists
-            if (mapView == null) {
-                mapView = getServer().createMap(player.world)
-                for (j in 0 until BUFFER_MAP_COUNT - 1) getServer().createMap(player.world) // Create extra buffer maps
-                screens.add(ScreenPart(mapView.id, i))
-            }
-            mapView.scale = MapView.Scale.CLOSEST
-            mapView.isUnlimitedTracking = true
-            for (renderer in mapView.renderers) {
-                mapView.removeRenderer(renderer)
-            }
-            val itemStack = ItemStack(Material.FILLED_MAP)
-            val mapMeta = itemStack.itemMeta as MapMeta
-            mapMeta.setMapView(mapView)
-            itemStack.setItemMeta(mapMeta)
-            val manager = Main.mapManager
-
-            manager.saveImage(mapView.id, i)
-
-            // mapautoなら目の前に配置
-            if (command == "mapauto") {
-                var location = player.getTargetBlock(10)!!.location
-                val facing = player.getTargetBlockFace(10)!!.oppositeFace
-                location = location.add(
-                    facing.oppositeFace.modX.toDouble(),
-                    facing.oppositeFace.modY.toDouble(),
-                    facing.oppositeFace.modZ.toDouble()
-                )
-                location = location.add((-x * facing.modZ).toDouble(), -y.toDouble(), (x * facing.modX).toDouble())
-                val itemFrame: ItemFrame = player.world.spawn(location, GlowItemFrame::class.java)
-                itemFrame.isVisible = false
-                itemFrame.setFacingDirection(facing.oppositeFace)
-                itemFrame.setItem(itemStack)
-            } else {
-                player.world.dropItem(player.location, itemStack)
-            }
-            x++
-            if (x >= Main.configData.mapWidth) {
-                x = 0
-                y++
-            }
-        }
-    }
 }

@@ -27,8 +27,6 @@ class Main : JavaPlugin() ,Listener {
 
     private val teleportTasks = mutableMapOf<Player, TeleportTask>()
 
-
-
     companion object {
         val version = "2023/4/10"
         var commandSender: CommandSender? = null
@@ -50,9 +48,7 @@ class Main : JavaPlugin() ,Listener {
 
         var kitManager: KitManager = KitManager()
         lateinit var locationManager : LocationManager
-        lateinit var mapManager: MapManager
         var videoCapture: VideoCapture? = null
-
 
         // プレイヤーの統計データ
         var playerMap = ConcurrentHashMap<UUID, PlayerData>()
@@ -60,16 +56,12 @@ class Main : JavaPlugin() ,Listener {
         var running = true                      // スレッド終了フラグ
         var taskSwitchCount = 30                // 減算していき０になったらスイッチする
 
-
         lateinit var configData: ConfigData
-
     }
 
     override fun onEnable() {
         plugin = this
         locationManager = LocationManager()
-        mapManager = MapManager()
-
 
         saveDefaultConfig()
         configData = loadConfigData(config)
@@ -78,16 +70,10 @@ class Main : JavaPlugin() ,Listener {
         getCommand("mc")!!.setExecutor(Command)
         getCommand("manbo")!!.setExecutor(Command)
 
-        mapManager.init()
         locationManager.load()
 
-        videoCapture = VideoCapture(
-            this,
-            configData.vcWidth,
-            configData.vcHeight,
-        )
+        videoCapture = VideoCapture(this, configData.vcWidth, configData.vcHeight)
         videoCapture?.start()
-
 
         // カメラスレッド生成
         for (no in 1..cameraCount) {
@@ -482,7 +468,7 @@ fun loadConfigData(config: FileConfiguration): ConfigData {
     val ret = ConfigData(
         broadcast = config.getBoolean("broadcast", false),
         switchTime = config.getInt("switchTime",30),
-        mapMode = config.getInt("mapMode",2),
+        mapMode = config.getInt("mapMode",3),
         streamPort = config.getInt("streamPort",1337),
     )
 

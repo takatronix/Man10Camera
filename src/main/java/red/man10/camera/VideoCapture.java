@@ -32,8 +32,39 @@ class VideoCaptureUDPServer extends Thread {
     public void onFrame(BufferedImage frame) {
 
     }
-
     public void run() {
+        try {
+            byte[] buffer = new byte[1024*1024]; // 1 mb
+            socket = new DatagramSocket(1337);
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            while (running) {
+                socket.receive(packet);
+
+                byte[] data = packet.getData();
+
+                if (data[0]==-1 && data[1]==-40) { // FF D8 (start of file)
+                    if (output.size()>0) {
+                        try {
+                            ByteArrayInputStream stream = new ByteArrayInputStream(output.toByteArray());
+                            onFrame(ImageIO.read(stream));
+                        } catch (IOException e) {}
+
+                        output.reset();
+                    }
+                }
+
+                output.write(data,0,packet.getLength());
+                //System.out.println(String.format("%02X", data[0])+" "+String.format("%02X", data[1]));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public void run2() {
         try {
             byte[] buffer = new byte[1024 * 1024]; // 1 mb
             logger.info("Listening to stream on port " + Main.configData.getStreamPort());
@@ -138,12 +169,20 @@ public class VideoCapture extends Thread {
         videoCaptureUDPServer.start();
     }
 
-    public void renderCanvas(int id, MapCanvas mapCanvas) {
+    public void renderCanvas(ScreenPart screen, MapCanvas mapCanvas) {
         BufferedImage frame = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
-        Bukkit.getLogger().info("rendering screen part " + id );
-
         Graphics2D graphics = frame.createGraphics();
         graphics.drawImage(currentFrame,0,0,null);
+
+        var id = screen.mapId;
+        var partId = screen.partId;
+
+        var w = Main.configData.getMapWidth();
+        var x = partId % w;
+        var y = partId / w;
+
+        graphics.drawImage(currentFrame,x * -128,y * -128,null);
+
         switch (id) {
             case 0: graphics.drawImage(currentFrame,0,0,null); break;
             case 1: graphics.drawImage(currentFrame,-128,0,null); break;

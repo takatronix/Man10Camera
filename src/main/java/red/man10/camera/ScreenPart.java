@@ -18,7 +18,6 @@ public class ScreenPart {
   }
 
   public ScreenPart(int mapId, int partId) {
-    this.mapId = mapId;
-    this.partId = partId;
+    this.mapId = mapId;    this.partId = partId;
   }
 }

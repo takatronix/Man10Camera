@@ -6,6 +6,7 @@ data class ConfigData (
 
     var mapMode:Int = 2,
     var mapSize: Int = 0,
+
     var mapWidth: Int = 0,
     var vcWidth: Int = 0,
     var vcHeight: Int = 0,
