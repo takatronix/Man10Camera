@@ -1,5 +1,10 @@
 package red.man10.camera
-import org.bukkit.*
+
+
+import org.bukkit.Bukkit
+import org.bukkit.GameMode
+import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
@@ -9,13 +14,14 @@ import org.bukkit.potion.PotionEffectType
 import org.bukkit.util.Vector
 import java.io.File
 import java.util.*
+import kotlin.concurrent.thread
 import kotlin.math.cos
 import kotlin.math.sin
 
 
 //region 定義
 // カメラの動作モード
-enum class CameraMode{
+enum class CameraMode {
     STOP,                       // 自動
     AUTO,                       // 自動
     SPECTATOR,                  // スペクテーター
@@ -29,27 +35,30 @@ enum class CameraMode{
     FACE,                       // 顔の前に現れる
 
 }
+
 // カメラの表示モード
 enum class VisibleMode {
     HIDE,                       // 非表示(スペクテーター)
     SHOW,                       // 透明で頭だけ
     SHOWBODY                    // ボディも表示
 }
+
 //endregion
 class CameraThread : Thread() {
     //region 内部変数
-    private var wait:Long = 1000 / 60           // 更新サイクル
+    private var wait: Long = 1000 / 60           // 更新サイクル
     private var target: UUID? = null            // 監視対象
     private var camera: UUID? = null            // カメラプレーヤ
-    private var angle:Double = 0.0              // 現在のカメラの回転角度(0-360)
-    private var isTargetOnline:Boolean = false
+    private var angle: Double = 0.0              // 現在のカメラの回転角度(0-360)
+    private var isTargetOnline: Boolean = false
     private var workingCounter = 0
     private var isInBlockLast = false
+
     //endregion
     //region 設定
-    private var autoTarget:Boolean = true       // ターゲットを見失ったとき
-    private var radius:Double = 5.0            // 回転半径
-    private var height:Double = 2.0
+    private var autoTarget: Boolean = true       // ターゲットを見失ったとき
+    private var radius: Double = 5.0            // 回転半径
+    private var height: Double = 2.0
     private var angleStep = 0.08                // 回転速度
     private var nightVisionFlag = false           // 暗視設定
 
@@ -57,80 +66,108 @@ class CameraThread : Thread() {
     private var notificationFlag = true             // 配信を個人に通知するか
     private var titleFlag = true             // 配信を個人に通知するか
 
-    private var relativePos:Vector= Vector(5.0,2.0,0.0)    // カメラの相対位置
-    private var cameraMode:CameraMode = CameraMode.AUTO              // 動作モード
-    private var visibleMode:VisibleMode = VisibleMode.SHOW           // 表示モード
+    private var relativePos: Vector = Vector(5.0, 2.0, 0.0)    // カメラの相対位置
+    private var cameraMode: CameraMode = CameraMode.AUTO              // 動作モード
+    private var visibleMode: VisibleMode = VisibleMode.SHOW           // 表示モード
 
-    private var kitName:String = "manbo"
+    private var kitName: String = "manbo"
 
+    private var cameraApi: CameraAPIClient? = CameraAPIClient()
+
+    public var IsBusy: Boolean = false
     //endregion
     //region プロパティ
     var cameraLabel = ""                     // カメララベル
     var cameraName = ""                     // カメラ名称
     var running = true                      // スレッド終了フラグ
-    var actionText:String = ""
-    public val cameraPlayer:Player?
+    var actionText: String = ""
+    public val cameraPlayer: Player?
         get() {
-            if(camera == null)
+            if (camera == null)
                 return null
-            return Bukkit.getPlayer(camera!!)}
-    private val targetPlayer:Player?
+            return Bukkit.getPlayer(camera!!)
+        }
+    private val targetPlayer: Player?
         get() {
-            if(target == null)
+            if (target == null)
                 return null
-            return Bukkit.getPlayer(target!!)}
+            return Bukkit.getPlayer(target!!)
+        }
+
     // カメラのUUID
-    val uniqueId:UUID?
-        get(){ return camera}
-    val targetUniqueId:UUID?
-        get(){ return target }
+    val uniqueId: UUID?
+        get() {
+            return camera
+        }
+    val targetUniqueId: UUID?
+        get() {
+            return target
+        }
+
     // カメラの座標
-    private val cameraPos:Vector?
-        get(){ return cameraPlayer?.location?.toVector() }
+    private val cameraPos: Vector?
+        get() {
+            return cameraPlayer?.location?.toVector()
+        }
+
     // カメラの向き
-    val cameraDir:Vector?
-        get() { return cameraPlayer?.location?.direction }
+    val cameraDir: Vector?
+        get() {
+            return cameraPlayer?.location?.direction
+        }
+
     // ターゲットの座標
-    private val targetPos:Vector?
-        get() { return targetPlayer?.location?.toVector() }
+    private val targetPos: Vector?
+        get() {
+            return targetPlayer?.location?.toVector()
+        }
+
     // ターゲットの向き
-    val targetDir:Vector?
-        get(){ return targetPlayer?.location?.direction }
+    val targetDir: Vector?
+        get() {
+            return targetPlayer?.location?.direction
+        }
+
     // ターゲット-カメラ間距離
-    val targetDistance:Double?
-        get(){ return targetPlayer?.location?.distance(cameraPlayer?.location!!) }
+    val targetDistance: Double?
+        get() {
+            return targetPlayer?.location?.distance(cameraPlayer?.location!!)
+        }
+
     // カメラ->ターゲットのベクトル
-    private val toTargetVec:Vector?
-        get(){ return targetPos?.subtract(cameraPos!!) }
+    private val toTargetVec: Vector?
+        get() {
+            return targetPos?.subtract(cameraPos!!)
+        }
     //endregion
 
     // スレッドメイン
     override fun run() {
         info("Camera thread started:${cameraLabel}")
-        while(running){
+        while (running) {
             sleep(wait)
             Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
-                sendActionText(cameraPlayer,actionText)
+                sendActionText(cameraPlayer, actionText)
             })
 
-            if(!canWork())
+            if (!canWork())
                 continue
 
             // カメラがブロックとかさなっているか検出
             Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
                 val isInBlock = isInBlock()
-                if(isInBlockLast != isInBlock){
-                    if(isInBlock){
+                if (isInBlockLast != isInBlock) {
+                    if (isInBlock) {
                         angleStep *= -1
                         onEnterBlock()
-                    }else{
+                    } else {
                         onExitBlock()
                     }
                     isInBlockLast = isInBlock
                 }
             })
 
-            when(cameraMode){
+            when (cameraMode) {
                 CameraMode.AUTO -> onAutoMode()
                 CameraMode.SPECTATOR -> onSpectatorMode()
                 CameraMode.FOLLOW -> onFollowMode()
@@ -141,7 +178,7 @@ class CameraThread : Thread() {
                 CameraMode.BACK_VIEW -> onBackViewMode()
                 CameraMode.FRONT -> onFrontMode()
                 CameraMode.FACE -> onFaceMode()
-                else-> onStopMode()
+                else -> onStopMode()
             }
             workingCounter++
         }
@@ -149,14 +186,12 @@ class CameraThread : Thread() {
     }
 
     // tick毎イベント
-    fun onTick(){
-
-
+    fun onTick() {
 
 
     }
 
-    fun onEnterBlock(){
+    fun onEnterBlock() {
         info("${cameraLabel}がブロックにはいった")
         /*
         if(visibleMode == VisibleMode.HIDE)
@@ -166,7 +201,8 @@ class CameraThread : Thread() {
             cameraPlayer?.gameMode = GameMode.SPECTATOR
         })*/
     }
-    fun onExitBlock(){
+
+    fun onExitBlock() {
         info("${cameraLabel}がブロックからぬけた")
         /*
         if(visibleMode == VisibleMode.HIDE)
@@ -178,48 +214,53 @@ class CameraThread : Thread() {
     }
 
     // ターゲットがオフラインになった
-    private fun onTargetOffline(){
-        if(autoTarget){
+    private fun onTargetOffline() {
+        if (autoTarget) {
             info("ターゲットがオフラインのため切り替える")
             Main.taskSwitchCount = 0
         }
     }
-    public fun changeMode(mode:CameraMode){
+
+    public fun changeMode(mode: CameraMode) {
         cameraMode = mode
     }
-    fun showModeTitle(title:String, subtitle:String="", fadeIn:Int = 10, stay:Int=100, fadeOut:Int = 10){
-        if(titleFlag)
-            cameraPlayer?.sendTitle(title,subtitle,fadeIn,stay,fadeOut)
+
+    fun showModeTitle(title: String, subtitle: String = "", fadeIn: Int = 10, stay: Int = 100, fadeOut: Int = 10) {
+        if (titleFlag)
+            cameraPlayer?.sendTitle(title, subtitle, fadeIn, stay, fadeOut)
     }
-    fun sendTitle(title:String, subtitle:String="",time:Double = 3.0){
+
+    fun sendTitle(title: String, subtitle: String = "", time: Double = 3.0) {
         Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             val tick = time * 20
-            cameraPlayer?.sendTitle(title.replace("&","§"),subtitle.replace("&","§"),10,tick.toInt(),10)
+            cameraPlayer?.sendTitle(title.replace("&", "§"), subtitle.replace("&", "§"), 10, tick.toInt(), 10)
         })
     }
-    fun sendText(text:String,time:Double = 3.0){
 
-        this.actionText = text.replace("&","§")
+    fun sendText(text: String, time: Double = 3.0) {
+
+        this.actionText = text.replace("&", "§")
         val tick = time * 20
-        Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable { actionText = ""}, tick.toLong())
+        Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable { actionText = "" }, tick.toLong())
     }
 
 
     // スレッドが動作可能か？
-    fun canWork() :Boolean{
-        when(cameraMode){
+    fun canWork(): Boolean {
+        when (cameraMode) {
             // Lookモードは対象がなくてもOK
             CameraMode.LOOK -> {
-                if(cameraPlayer?.isOnline == true)
+                if (cameraPlayer?.isOnline == true)
                     return true
             }
+
             CameraMode.STOP -> return false
             else -> {
-                if(cameraPlayer?.isOnline == true && targetPlayer?.isOnline == true){
+                if (cameraPlayer?.isOnline == true && targetPlayer?.isOnline == true) {
                     isTargetOnline = true
                     return true
-                }else{
-                    if(isTargetOnline){
+                } else {
+                    if (isTargetOnline) {
                         isTargetOnline = false
                         onTargetOffline()
                     }
@@ -230,12 +271,14 @@ class CameraThread : Thread() {
 
         return false
     }
-    private fun resetAllPostionEffects(player:Player){
+
+    private fun resetAllPostionEffects(player: Player) {
         for (effect in player.activePotionEffects)
             player.removePotionEffect(effect.type)
     }
+
     // カメラモード設定
-    private fun setMode(sender: CommandSender?,mode:CameraMode,specTarget:Player?= null){
+    private fun setMode(sender: CommandSender?, mode: CameraMode, specTarget: Player? = null) {
         cameraMode = mode
 
         // クリエイティブとスペクテーターを切り替えてスペクテーターターゲットを外す
@@ -244,14 +287,17 @@ class CameraThread : Thread() {
                 CameraMode.CLONE -> {
                     cameraPlayer?.gameMode = GameMode.SURVIVAL
                 }
+
                 CameraMode.SPECTATOR -> {
                     cameraPlayer?.gameMode = GameMode.CREATIVE
                     cameraPlayer?.gameMode = GameMode.SPECTATOR
                     cameraPlayer?.spectatorTarget = specTarget
                 }
+
                 CameraMode.BACK_VIEW -> {
                     cameraPlayer?.gameMode = GameMode.SPECTATOR
                 }
+
                 else -> {
                     cameraPlayer?.gameMode = GameMode.CREATIVE
                 }
@@ -259,14 +305,15 @@ class CameraThread : Thread() {
 
         })
         setAppearance(sender)
-        setNightVision(sender,nightVisionFlag)
+        setNightVision(sender, nightVisionFlag)
     }
-    fun setAppearance(sender: CommandSender?){
+
+    fun setAppearance(sender: CommandSender?) {
         // 表示モードに基づいて表示を合わせる
         info("visibleMode:$visibleMode")
 
-        KitManager.load(cameraPlayer!!,kitName)
-        when(visibleMode){
+        KitManager.load(cameraPlayer!!, kitName)
+        when (visibleMode) {
             VisibleMode.SHOWBODY -> showBody(sender)
             VisibleMode.SHOW -> show(sender)
             VisibleMode.HIDE -> hide(sender)
@@ -274,40 +321,39 @@ class CameraThread : Thread() {
     }
 
     // 鯖にいるユーザーに通知する
-    private fun notifyUsers(message:String,sender: CommandSender?, target:Player?){
-        if(sender == null)
+    private fun notifyUsers(message: String, sender: CommandSender?, target: Player?) {
+        if (sender == null)
             return
-        Bukkit.getOnlinePlayers().forEach {
-            p ->
+        Bukkit.getOnlinePlayers().forEach { p ->
             run {
-                if(target == null)
+                if (target == null)
                     return
-                if(Main.configData.broadcast)
-                    p.sendMessage("§e§l"+cameraName+" §a§l"+ target.name +message)
-                else{
-                    if(notificationFlag && target == p)
-                        p.sendMessage("§e§l"+cameraName+" §a§l"+ target.name +message)
+                if (Main.configData.broadcast)
+                    p.sendMessage("§e§l" + cameraName + " §a§l" + target.name + message)
+                else {
+                    if (notificationFlag && target == p)
+                        p.sendMessage("§e§l" + cameraName + " §a§l" + target.name + message)
                 }
             }
         }
     }
 
-    fun canStart(sender:CommandSender?):Boolean{
-        if(cameraPlayer == null){
-            error("カメラなし",sender)
+    fun canStart(sender: CommandSender?): Boolean {
+        if (cameraPlayer == null) {
+            error("カメラなし", sender)
             return false
         }
-        if(!cameraPlayer!!.isOnline){
-            error("カメラはオフライン",sender)
+        if (!cameraPlayer!!.isOnline) {
+            error("カメラはオフライン", sender)
             return false
         }
 
-        if(targetPlayer == null){
-            error("ターゲットなし",sender)
+        if (targetPlayer == null) {
+            error("ターゲットなし", sender)
             return false
         }
-        if(!targetPlayer!!.isOnline){
-            error("ターゲットはオフライン",sender)
+        if (!targetPlayer!!.isOnline) {
+            error("ターゲットはオフライン", sender)
             return false
         }
         return true
@@ -315,7 +361,7 @@ class CameraThread : Thread() {
 
     //region 基本コマンド
     // 特定プレイヤーを追跡
-    fun follow(sender: CommandSender?,player:Player? = null) {
+    fun follow(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
         if (!canStart(sender))
             return
@@ -340,13 +386,13 @@ class CameraThread : Thread() {
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
 
-    fun face(sender: CommandSender?,player:Player? = null){
+    fun face(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
-        if(!canStart(sender))
+        if (!canStart(sender))
             return
 
-        setMode(sender,CameraMode.FACE)
-        if(player?.isOnline == true){
+        setMode(sender, CameraMode.FACE)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
 
@@ -360,17 +406,18 @@ class CameraThread : Thread() {
 
         showCamera();
 
-        info("${player!!.name}を顔モードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        info("${player!!.name}を顔モードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
-    fun front(sender: CommandSender?,player:Player? = null){
+
+    fun front(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
-        if(!canStart(sender))
+        if (!canStart(sender))
             return
 
-        setMode(sender,CameraMode.FRONT)
-        if(player?.isOnline == true){
+        setMode(sender, CameraMode.FRONT)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
 
@@ -384,17 +431,18 @@ class CameraThread : Thread() {
 
         showCamera();
 
-        info("${player!!.name}を前方モードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        info("${player!!.name}を前方モードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
-    fun back(sender: CommandSender?,player:Player? = null){
+
+    fun back(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
-        if(!canStart(sender))
+        if (!canStart(sender))
             return
 
-        setMode(sender,CameraMode.BACK)
-        if(player?.isOnline == true){
+        setMode(sender, CameraMode.BACK)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
 
@@ -408,17 +456,18 @@ class CameraThread : Thread() {
 
         showCamera();
 
-        info("${player!!.name}を背後モードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        info("${player!!.name}を背後モードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
-    fun backView(sender: CommandSender?,player:Player? = null){
+
+    fun backView(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
-        if(!canStart(sender))
+        if (!canStart(sender))
             return
 
-        setMode(sender,CameraMode.BACK_VIEW)
-        if(player?.isOnline == true){
+        setMode(sender, CameraMode.BACK_VIEW)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
 
@@ -432,126 +481,135 @@ class CameraThread : Thread() {
         showCamera();
 
 
-        info("${player!!.name}を背後Viewモードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        info("${player!!.name}を背後Viewモードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
 
-    fun clone(sender: CommandSender?,player:Player? = null){
+    fun clone(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
-        if(!canStart(sender))
+        if (!canStart(sender))
             return
-        setMode(sender,CameraMode.CLONE)
-        if(player?.isOnline == true){
+        setMode(sender, CameraMode.CLONE)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
 
         showCamera()
         // targetにCameraをうつさないようにする
-        targetPlayer?.hidePlayer(Main.plugin!!,cameraPlayer!!)
-        cameraPlayer?.hidePlayer(Main.plugin!!,targetPlayer!!)
-        info("${player!!.name}をクローンモードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        targetPlayer?.hidePlayer(Main.plugin!!, cameraPlayer!!)
+        cameraPlayer?.hidePlayer(Main.plugin!!, targetPlayer!!)
+        info("${player!!.name}をクローンモードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
 
-    fun showCamera(){
+    fun showCamera() {
         Bukkit.getOnlinePlayers().forEach { p ->
-            p.showPlayer(Main.plugin!!,cameraPlayer!!)
-            cameraPlayer?.showPlayer(Main.plugin!!,p)
+            p.showPlayer(Main.plugin!!, cameraPlayer!!)
+            cameraPlayer?.showPlayer(Main.plugin!!, p)
         }
     }
 
-    fun hideCamera(){
+    fun hideCamera() {
         Bukkit.getOnlinePlayers().forEach { p ->
-            p.hidePlayer(Main.plugin!!,cameraPlayer!!)
-            cameraPlayer?.hidePlayer(Main.plugin!!,p)
+            p.hidePlayer(Main.plugin!!, cameraPlayer!!)
+            cameraPlayer?.hidePlayer(Main.plugin!!, p)
         }
     }
-    fun spectate(sender: CommandSender?, player:Player? = null){
+
+    fun spectate(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
-        setMode(sender,CameraMode.SPECTATOR,targetPlayer)
-        if(!canStart(sender))
+        setMode(sender, CameraMode.SPECTATOR, targetPlayer)
+        if (!canStart(sender))
             return
 
         showCamera();
         showModeTitle("§d§l${targetPlayer?.name}§f§lさんの視点")
-        info("${player!!.name}をスペクテーターモードで監視",sender)
-        notifyUsers(Main.spectatoressage,sender,player)
+        info("${player!!.name}をスペクテーターモードで監視", sender)
+        notifyUsers(Main.spectatoressage, sender, player)
     }
+
     // 特定プレイヤーを回転しながら追跡
-    fun rotate(sender: CommandSender?, player:Player? = null){
+    fun rotate(sender: CommandSender?, player: Player? = null) {
         target = player?.uniqueId
-        if(!canStart(sender))
+        if (!canStart(sender))
             return
-        setMode(sender,CameraMode.ROTATE)
-        if(player?.isOnline == true){
+        setMode(sender, CameraMode.ROTATE)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
         showCamera();
-        info("${cameraLabel}を回転モードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        info("${cameraLabel}を回転モードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§a§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
+
     // カメラを固定でプレイヤーを注視
-    fun look(sender: CommandSender,player:Player? = null){
-        setMode(sender,CameraMode.LOOK)
-        if(player?.isOnline == true){
+    fun look(sender: CommandSender, player: Player? = null) {
+        setMode(sender, CameraMode.LOOK)
+        if (player?.isOnline == true) {
             target = player.uniqueId
         }
-        info("${cameraLabel}をルックモードに設定",sender)
-        notifyUsers(Main.liveMessage,sender,player)
+        info("${cameraLabel}をルックモードに設定", sender)
+        notifyUsers(Main.liveMessage, sender, player)
         showModeTitle("§e§l${targetPlayer?.name}§f§lさんを§b§l配信中")
     }
+
     // カメラ停止
-    fun stop(sender: CommandSender,player:Player? = null){
-        setMode(sender,CameraMode.STOP)
-        info("${cameraLabel}を停止させました",sender)
+    fun stop(sender: CommandSender, player: Player? = null) {
+        setMode(sender, CameraMode.STOP)
+        info("${cameraLabel}を停止させました", sender)
     }
     //endregion
 
     // カメラの相対位置の設定
-    fun setRelativePosition(sender: CommandSender,x:Double,y:Double,z:Double){
-        relativePos = Vector(x,y,z)
+    fun setRelativePosition(sender: CommandSender, x: Double, y: Double, z: Double) {
+        relativePos = Vector(x, y, z)
         save(sender)
     }
 
     // 半径の設定
-    fun setRadius(sender: CommandSender,r:Double){
+    fun setRadius(sender: CommandSender, r: Double) {
         radius = r
-        if(radius < 1.0)
+        if (radius < 1.0)
             radius = 1.0
         relativePos.x = radius
         save(sender)
     }
 
     // 高さの設定
-    fun setHeight(sender: CommandSender,h:Double){
+    fun setHeight(sender: CommandSender, h: Double) {
         height = h
         relativePos.y = h
         save(sender)
     }
+
     // カメラプレイヤーの設定
-    fun setCamera(sender: CommandSender, name:String?):Boolean {
-        val player = getOfflinePlayer(sender,name) ?: return false
+    fun setCamera(sender: CommandSender, name: String?): Boolean {
+        val player = getOfflinePlayer(sender, name) ?: return false
         camera = player.player?.uniqueId
-        info("${cameraLabel}: ${player.name}をカメラに設定しました",sender)
+        info("${cameraLabel}: ${player.name}をカメラに設定しました", sender)
         save(sender)
         return true
     }
+
     // 監視対象の設定
-    fun setTarget(sender: CommandSender, name:String?):Boolean {
-        val player = getOfflinePlayer(sender,name) ?: return false
+    fun setTarget(sender: CommandSender, name: String?): Boolean {
+        val player = getOfflinePlayer(sender, name) ?: return false
         target = player.player?.uniqueId
-        info("${cameraLabel}${player.name}をターゲットに設定しました",sender)
+        info("${cameraLabel}${player.name}をターゲットに設定しました", sender)
         save(sender)
         return true
     }
-    private fun onAutoMode(){
+
+    private fun onAutoMode() {
     }
-    private fun onStopMode(){
+
+    private fun onStopMode() {
     }
-    private fun onSpectatorMode(){
+
+    private fun onSpectatorMode() {
 
         Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             var camera = cameraPlayer
@@ -562,15 +620,15 @@ class CameraThread : Thread() {
                 return@Runnable
 
             var retarget = false
-            if(cameraPlayer?.world != target.world){
+            if (cameraPlayer?.world != target.world) {
                 info("プレイヤーがワールド移動した -> 再登録")
                 retarget = true
             }
-            if(retarget){
+            if (retarget) {
                 info("スペクテーターモード中にカメラから距離がはなれたため、スペクテーター解除されたと判断")
                 camera.gameMode = GameMode.CREATIVE
-                camera.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,10,true,false))
-                camera.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,10,true,false))
+                camera.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE, 10, true, false))
+                camera.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 10, true, false))
                 camera.gameMode = GameMode.SPECTATOR
                 camera.spectatorTarget = targetPlayer
 
@@ -581,19 +639,21 @@ class CameraThread : Thread() {
         })
     }
 
-    fun isInBlock():Boolean{
+    fun isInBlock(): Boolean {
 
-        if(cameraPlayer?.isOnline == true){
-            if(cameraPlayer?.location?.block?.type == Material.AIR){
-                return  false
+        if (cameraPlayer?.isOnline == true) {
+            if (cameraPlayer?.location?.block?.type == Material.AIR) {
+                return false
             }
         }
         return true
     }
-    fun onLookMode(){
+
+    fun onLookMode() {
         lookAt(targetPos)
     }
-    private fun onFollowMode(){
+
+    private fun onFollowMode() {
         // ターゲットの相対位置のカメラ位置
         val loc = targetPlayer?.location?.add(relativePos)
         val pos = loc?.toVector()
@@ -601,7 +661,8 @@ class CameraThread : Thread() {
         loc?.direction = dir!!
         teleport(loc)
     }
-    private fun onBackMode(){
+
+    private fun onBackMode() {
 
         // 対象の視線ベクトル
         val vec = targetPlayer!!.location.direction.clone()
@@ -618,7 +679,8 @@ class CameraThread : Thread() {
         loc?.direction = dir!!
         teleport(loc)
     }
-    private fun onFrontMode(){
+
+    private fun onFrontMode() {
 
         // 対象の視線ベクトル
         val vec = targetPlayer!!.location.direction.clone()
@@ -635,7 +697,8 @@ class CameraThread : Thread() {
         loc?.direction = dir!!
         teleport(loc)
     }
-    private fun onFaceMode(){
+
+    private fun onFaceMode() {
 
         // 対象の視線ベクトル
         val vec = targetPlayer!!.location.direction.clone()
@@ -650,7 +713,8 @@ class CameraThread : Thread() {
         loc?.direction = dir!!
         teleport(loc)
     }
-    private fun onBackViewMode(){
+
+    private fun onBackViewMode() {
 
         // 対象の視線ベクトル
         val vec = targetPlayer!!.location.direction.clone()
@@ -666,13 +730,14 @@ class CameraThread : Thread() {
         loc?.direction = dir!!
         teleport(loc)
     }
-    private fun onCloneMode(){
+
+    private fun onCloneMode() {
 
         // ターゲットの相対位置のカメラ位置
         val loc = targetPlayer?.location
         val pos = loc?.toVector()
         val dir = targetPos?.subtract(pos!!)
-       // loc?.direction = dir!!
+        // loc?.direction = dir!!
 
         Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
 
@@ -680,7 +745,7 @@ class CameraThread : Thread() {
             (content as Array<out ItemStack>?)?.let { cameraPlayer?.inventory?.setContents(it) }
             cameraPlayer?.inventory?.heldItemSlot = targetPlayer?.inventory?.heldItemSlot!!
 
-            if(targetPlayer?.health!! > 0)
+            if (targetPlayer?.health!! > 0)
                 cameraPlayer?.health = targetPlayer?.health!!
             cameraPlayer?.foodLevel = targetPlayer?.foodLevel!!
             cameraPlayer?.exp = targetPlayer?.exp!!
@@ -688,27 +753,29 @@ class CameraThread : Thread() {
             cameraPlayer?.level = targetPlayer?.level!!
 
             val camera = cameraPlayer
-            if(loc != null && camera != null && camera.isOnline){
+            if (loc != null && camera != null && camera.isOnline) {
                 camera.teleport(loc)
             }
         })
     }
 
     //region 表示モード
-    fun hide(sender:CommandSender? = null) {
+    fun hide(sender: CommandSender? = null) {
         val camera = cameraPlayer
-        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 10, true,false))
+        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 10, true, false))
         camera?.gameMode = GameMode.SPECTATOR
         visibleMode = VisibleMode.HIDE
     }
-    fun show(sender:CommandSender?){
+
+    fun show(sender: CommandSender?) {
         showCamera()
         val camera = cameraPlayer
-        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE,10,true,false))
+        camera?.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 10, true, false))
         camera?.gameMode = GameMode.CREATIVE
         visibleMode = VisibleMode.SHOW
     }
-    fun showBody(sender:CommandSender?){
+
+    fun showBody(sender: CommandSender?) {
         showCamera()
         val camera = cameraPlayer
         camera?.removePotionEffect(PotionEffectType.INVISIBILITY)
@@ -717,81 +784,87 @@ class CameraThread : Thread() {
     }
     //endregion
 
-    fun setNightVision(sender:CommandSender?,flag:Boolean){
+    fun setNightVision(sender: CommandSender?, flag: Boolean) {
         val camera = cameraPlayer
-        if(flag)
-            camera?.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE,10,true,false))
+        if (flag)
+            camera?.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE, 10, true, false))
         else
             camera?.removePotionEffect(PotionEffectType.NIGHT_VISION)
 
-        if(camera?.isOnline == false){
-            error("カメラがオンラインではないのでナイトビジョンにできない",sender)
+        if (camera?.isOnline == false) {
+            error("カメラがオンラインではないのでナイトビジョンにできない", sender)
         }
         nightVisionFlag = flag
-        info("{$cameraName}ナイトビジョンを{$flag}にしました",sender)
+        info("{$cameraName}ナイトビジョンを{$flag}にしました", sender)
         save(sender)
     }
-    fun setNotification(sender:CommandSender,flag:Boolean){
-        notificationFlag = flag
-        info("{$cameraName}個人通知を{$flag}にしました",sender)
-        save(sender)
-    }
-    fun setTitleFlag(sender:CommandSender,flag:Boolean){
-        titleFlag = flag
-        info("{$cameraName}タイトル表示を{$flag}にしました",sender)
-        save(sender)
-    }
-    fun setKit(sender:CommandSender,kitName:String,save:Boolean = true){
 
-        if(KitManager.load(cameraPlayer!!,kitName) == false){
-            error("{$kitName}というキットは存在しません",sender)
+    fun setNotification(sender: CommandSender, flag: Boolean) {
+        notificationFlag = flag
+        info("{$cameraName}個人通知を{$flag}にしました", sender)
+        save(sender)
+    }
+
+    fun setTitleFlag(sender: CommandSender, flag: Boolean) {
+        titleFlag = flag
+        info("{$cameraName}タイトル表示を{$flag}にしました", sender)
+        save(sender)
+    }
+
+    fun setKit(sender: CommandSender, kitName: String, save: Boolean = true) {
+
+        if (KitManager.load(cameraPlayer!!, kitName) == false) {
+            error("{$kitName}というキットは存在しません", sender)
             return
         }
 
         this.kitName = kitName
-        info("{$cameraName}のキットを{$kitName}にしました",sender)
-        if(save)
-          save(sender)
+        info("{$cameraName}のキットを{$kitName}にしました", sender)
+        if (save)
+            save(sender)
     }
 
-    private fun onRotateMode(){
+    private fun onRotateMode() {
         // ターゲットの相対位置のカメラ位置
         val loc = targetPlayer?.location?.add(relativePos)
         angle += angleStep
-        if(angle > 360)
+        if (angle > 360)
             angle = 0.0
         val x = targetPos?.x?.plus(radius * cos(toRadian(angle)))!!
         val z = targetPos?.z?.plus(radius * sin(toRadian(angle)))!!
         val y = targetPos?.y?.plus(relativePos.y)!!
-        loc?.set(x,y,z)
+        loc?.set(x, y, z)
         // ターゲットの位置 -> カメラのベクトルを求める
         val dir = targetPos?.subtract(loc!!.toVector())
         loc?.direction = dir!!
         teleport(loc)
     }
+
     // ポジションカメラをむける
-    private fun lookAt(pos:Vector?){
-        if(pos == null)
+    private fun lookAt(pos: Vector?) {
+        if (pos == null)
             return
         // カメラ->ターゲットのベクトルを設定する
         val loc = cameraPlayer?.location
         loc?.direction = toTargetVec!!
         teleport(loc)
     }
+
     // テレポートする
-    private fun teleport(loc:Location?){
+    private fun teleport(loc: Location?) {
         Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             val camera = cameraPlayer
-            if(loc != null && camera != null && camera.isOnline){
+            if (loc != null && camera != null && camera.isOnline) {
                 camera.teleport(loc)
             }
         })
     }
+
     //region ファイル管理
-    private fun save(sender:CommandSender?=null): Boolean {
+    private fun save(sender: CommandSender? = null): Boolean {
         val file = File(Main.plugin!!.dataFolder, "camera${File.separator}$cameraLabel.yml")
         info("saving ${file.absolutePath}")
-        try{
+        try {
             val config = YamlConfiguration.loadConfiguration(file)
             config["target"] = target?.toString()
             config["camera"] = camera?.toString()
@@ -806,59 +879,103 @@ class CameraThread : Thread() {
             config["kitName"] = kitName
 
             config.save(file)
-        }
-        catch (e:Exception){
-            error("カメラ設定の保存に失敗しました:${cameraLabel} / ${e.localizedMessage}",sender)
+        } catch (e: Exception) {
+            error("カメラ設定の保存に失敗しました:${cameraLabel} / ${e.localizedMessage}", sender)
             return false
         }
         info("${file.path}に保存")
         return true
     }
 
-    fun load(sender:CommandSender? = null): Boolean {
+    fun load(sender: CommandSender? = null): Boolean {
         val file = File(Main.plugin!!.dataFolder, "camera${File.separator}$cameraLabel.yml")
         info("loading ${file.absolutePath}")
-        try{
+        try {
             val config = YamlConfiguration.loadConfiguration(file)
 
             // target UUID
-            var s = config.getString("target",null)
-            if(s != null) target = UUID.fromString(s)
+            var s = config.getString("target", null)
+            if (s != null) target = UUID.fromString(s)
             // camera UUID
-            s = config.getString("camera",null)
-            if(s != null) camera = UUID.fromString(s)
+            s = config.getString("camera", null)
+            if (s != null) camera = UUID.fromString(s)
             cameraMode = enumValueOf(config["cameraMode"].toString())
             visibleMode = enumValueOf(config["visibleMode"].toString())
-            nightVisionFlag = config.getBoolean("nightVisionFlag",true)
-            notificationFlag = config.getBoolean("notificationFlag",true)
-            titleFlag = config.getBoolean("titleFlag",true)
+            nightVisionFlag = config.getBoolean("nightVisionFlag", true)
+            notificationFlag = config.getBoolean("notificationFlag", true)
+            titleFlag = config.getBoolean("titleFlag", true)
 
             // 回転半径
-            radius = config.getDouble("radius",5.0)
-            height = config.getDouble("height",2.0)
+            radius = config.getDouble("radius", 5.0)
+            height = config.getDouble("height", 2.0)
 
-            kitName = config.getString("kitName","manbo").toString()
+            kitName = config.getString("kitName", "manbo").toString()
             val gameMode = enumValueOf<GameMode>(config["gameMode"].toString())
             cameraPlayer?.gameMode = gameMode
-        }
-        catch (e:Exception){
-            error("カメラ設定の読み込みに失敗しました:${cameraLabel} / ${e.localizedMessage}",sender)
+        } catch (e: Exception) {
+            error("カメラ設定の読み込みに失敗しました:${cameraLabel} / ${e.localizedMessage}", sender)
             return false
         }
         return true
     }
 
     // 設定ファイルを削除
-    companion object fun deleteFile(sender: CommandSender?,folder:String, name: String): Boolean {
+    companion object
+
+    fun deleteFile(sender: CommandSender?, folder: String, name: String): Boolean {
         val file = File(Main.plugin!!.dataFolder, "$folder${File.separator}$name.yml")
         if (file.delete()) {
-            info("${name}を削除しました",sender)
+            info("${name}を削除しました", sender)
         } else {
-            error("${name}を削除に失敗しました",sender)
+            error("${name}を削除に失敗しました", sender)
         }
         return false
     }
+
+    fun sendAsync() {
+        TODO("Not yet implemented")
+    }
+
+    fun test(sender: CommandSender) {
+
+       var ret =  this.cameraApi?.takePhoto("binbo", sender.name)
+    }
     //endregion
 
+    fun takePhoto(sender: CommandSender,player:Player,mode:String):String?{
+        // 本人にspectatorモードでカメラを設定
+        this.spectate(sender, player)
+//        sender.sendMessage("§a§l写真を撮影しています...")
+
+
+        sendAllPlayerMessage("${player.name}さんが写真を撮影しています...")
+        thread{
+            var ret =  this.cameraApi?.takePhoto(mode, player.name)
+            if(ret == null){
+                error("写真撮影に失敗しました",sender)
+                return@thread
+            }
+            var url = "https://man10.red"+ret
+
+            // メインスレッドで実行
+            Bukkit.getScheduler().runTask(Main.plugin, Runnable {
+                //　コマンド実行
+                var cmd = "md create_photo $url"
+
+                //プレイヤーにコマンドを実行させる
+                Bukkit.getServer().dispatchCommand(player,cmd)
+
+                //executeCommand(cmd,sender)
+                info("写真を撮影しました $cmd",sender)
+            })
+        //    return url
+        }
+
+        return null
+    }
+
+    fun executeCommand(command: String,sender:CommandSender = Bukkit.getConsoleSender()) {
+        Bukkit.getServer().dispatchCommand(sender, command)
+    }
 }
 

@@ -8,11 +8,11 @@ import org.bukkit.inventory.ItemStack
 import java.io.File
 
 class KitManager {
-    companion object{
+    companion object {
 
         //      キットを保存する
         fun save(p: CommandSender, kitName: String): Boolean {
-            if(p !is Player){
+            if (p !is Player) {
                 p.sendMessage("プレイヤーのみ実行できます")
                 return false
             }
@@ -25,9 +25,9 @@ class KitManager {
                     data["inventory"] = p.inventory.contents
                     data["armor"] = p.inventory.armorContents
                     data.save(f)
-                    info( "キットを保存しました:$kitName",p)
+                    info("キットを保存しました:$kitName", p)
                 } catch (exception: Exception) {
-                    error("キットの保存に失敗した" + exception.message,p)
+                    error("キットの保存に失敗した" + exception.message, p)
                 }
             }
             return true
@@ -35,7 +35,7 @@ class KitManager {
 
         //      キットを読み込む
         fun load(p: CommandSender, kitName: String): Boolean {
-            if(p !is Player){
+            if (p !is Player) {
                 p.sendMessage("プレイヤーのみ実行できます")
                 return false
             }
@@ -46,25 +46,27 @@ class KitManager {
                 p.sendMessage("キットは存在しない:$kitName")
                 return false
             }
-            val inventoryList =  data["inventory"] as List<ItemStack>
-            val armorList =  data["armor"] as List<ItemStack>
+            val inventoryList = data["inventory"] as List<ItemStack>
+            val armorList = data["armor"] as List<ItemStack>
 
             p.inventory.clear()
             inventoryList.forEachIndexed { index, itemStack ->
-                p.inventory.setItem(index,itemStack)
+                p.inventory.setItem(index, itemStack)
             }
             p.inventory.armorContents = armorList.toTypedArray()
 
             return true
         }
-        fun delete(p: CommandSender, kitName: String): Boolean {val userdata = File(Main.plugin!!.dataFolder, File.separator + "kits")
+
+        fun delete(p: CommandSender, kitName: String): Boolean {
+            val userdata = File(Main.plugin!!.dataFolder, File.separator + "kits")
             val f = File(userdata, File.separator + kitName + ".yml")
             if (!f.exists()) {
                 p.sendMessage("キットは存在しない:$kitName")
                 return false
             }
             f.delete()
-            info( "${kitName}キットを削除しました",p)
+            info("${kitName}キットを削除しました", p)
             return true
         }
 
@@ -93,7 +95,7 @@ class KitManager {
         fun showList(p: CommandSender): Boolean {
             p.sendMessage("§e§l========== 登録済みのキット =========")
             getList().forEachIndexed { index, s ->
-                p.sendMessage("§e§l${index+1}: §f§l$s")
+                p.sendMessage("§e§l${index + 1}: §f§l$s")
             }
             p.sendMessage("§e§l===================================")
             return true

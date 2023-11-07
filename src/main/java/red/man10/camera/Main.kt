@@ -12,18 +12,17 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.*
 import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.player.PlayerFishEvent
-import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.event.player.PlayerMoveEvent
-import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.*
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.projectiles.ProjectileSource
 import org.bukkit.scheduler.BukkitRunnable
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 
-class Main : JavaPlugin() ,Listener {
+class Main : JavaPlugin(), Listener {
 
     private val teleportTasks = mutableMapOf<Player, TeleportTask>()
 
@@ -35,7 +34,8 @@ class Main : JavaPlugin() ,Listener {
 
         val broadcastMessage = "§c§lYoutubeライブ配信中!! §f§l->  §f§l§nhttps://www.youtube.com/@man10server/live"
         val liveMessage = "§f§lさんを§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
-        val spectatoressage = "§f§lさんの視点を§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
+        val spectatoressage =
+            "§f§lさんの視点を§c§lYoutubeでライブ配信中！！  §f§l§nhttps://www.youtube.com/@man10server/live"
         val prefix = "§e[MCX]"
 
         lateinit var plugin: JavaPlugin
@@ -47,8 +47,8 @@ class Main : JavaPlugin() ,Listener {
         var mc4 = CameraThread()
 
         var kitManager: KitManager = KitManager()
-        lateinit var locationManager : LocationManager
-        var videoCapture: VideoCapture? = null
+        lateinit var locationManager: LocationManager
+
 
         // プレイヤーの統計データ
         var playerMap = ConcurrentHashMap<UUID, PlayerData>()
@@ -58,6 +58,42 @@ class Main : JavaPlugin() ,Listener {
 
         lateinit var configData: ConfigData
     }
+
+
+    fun createSkin(e: PlayerJoinEvent) {
+        info("onPlayerLogin ${e.player.name}")
+        // Get the player's UUID
+        val uuid = e.player.uniqueId.toString().replace("-", "")
+        val name = e.player.name
+        // Create a new asynchronous task to execute the Python script
+        object : BukkitRunnable() {
+            override fun run() {
+                // Define the command
+                val command = arrayOf("python3", "/home/man10/mcserver/scripts/download_skin.py", name)
+
+                // Execute the command
+                try {
+                    info("download_skin.py ${name}")
+                    val process = Runtime.getRuntime().exec(command)
+
+                    // Read the output of the script
+                    val reader = BufferedReader(InputStreamReader(process.inputStream))
+                    reader.lines().forEach { line -> info(line) }
+
+                    // Read the error stream of the script
+                    val errorReader = BufferedReader(InputStreamReader(process.errorStream))
+                    errorReader.lines().forEach { line -> error(line) }
+
+                    // Wait for the script to finish
+                    process.waitFor()
+                    info("download_skin.py finished")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }.runTaskAsynchronously(Main.plugin)
+    }
+
 
     override fun onEnable() {
         plugin = this
@@ -72,8 +108,6 @@ class Main : JavaPlugin() ,Listener {
 
         locationManager.load()
 
-        videoCapture = VideoCapture(this, configData.vcWidth, configData.vcHeight)
-        videoCapture?.start()
 
         // カメラスレッド生成
         for (no in 1..cameraCount) {
@@ -115,7 +149,9 @@ class Main : JavaPlugin() ,Listener {
             }
         }, 0L, 1L)
 
-        Bukkit.getServer().pluginManager.registerEvents(this,this)
+        info("イベント登録")
+
+        Bukkit.getServer().pluginManager.registerEvents(this, this)
 
         info("Man10 Camera Plugin Enabled")
     }
@@ -193,7 +229,6 @@ class Main : JavaPlugin() ,Listener {
             getCamera(no).running = false
         }
 
-        videoCapture?.cleanup()
     }
 
     fun test() {
@@ -268,7 +303,8 @@ class Main : JavaPlugin() ,Listener {
                 cam?.setAppearance(null)
             }, 20L * 1)
         } else {
-            if(e.player.isOp)
+            createSkin(e)
+            if (e.player.isOp)
                 return
             e.player.gameMode = GameMode.SURVIVAL
         }
@@ -282,21 +318,20 @@ class Main : JavaPlugin() ,Listener {
     }
 
 
-
-    fun setCameraAppearance(player: Player,health : Double) {
-        if(health > 17)
+    fun setCameraAppearance(player: Player, health: Double) {
+        if (health > 17)
             KitManager.load(player, "manbo")
-        else if(health > 14.5)
+        else if (health > 14.5)
             KitManager.load(player, "love")
-        else if(health > 12)
+        else if (health > 12)
             KitManager.load(player, "question")
-        else if(health > 9.5)
+        else if (health > 9.5)
             KitManager.load(player, "shock")
-        else if(health > 7)
+        else if (health > 7)
             KitManager.load(player, "angry")
-        else if(health > 5)
+        else if (health > 5)
             KitManager.load(player, "cry")
-        else if(health > 2.5)
+        else if (health > 2.5)
             KitManager.load(player, "sleep")
         else
             KitManager.load(player, "death")
@@ -308,7 +343,7 @@ class Main : JavaPlugin() ,Listener {
     fun onPlayerRegainHealth(event: EntityRegainHealthEvent) {
         val entity = event.entity
         if (entity is Player) {
-            if(!isCamera(entity))
+            if (!isCamera(entity))
                 return
             val amount = event.amount
             val healthBefore = entity.health
@@ -316,7 +351,7 @@ class Main : JavaPlugin() ,Listener {
 
             println("プレイヤー ${entity.name}  が体力を回復しました: 回復量=$amount")
             println("回復前のヘルス: $healthBefore, 回復後のヘルス: $healthAfter")
-            setCameraAppearance(entity,healthAfter)
+            setCameraAppearance(entity, healthAfter)
         }
     }
 
@@ -330,11 +365,12 @@ class Main : JavaPlugin() ,Listener {
             info("onEntityDamage プレイヤー ${p.name} がダメージを与えました: ${e.damage}")
         }
     }
+
     @EventHandler
     fun onPlayerDamage(event: EntityDamageEvent) {
         val entity = event.entity
         if (entity is Player) {
-            if(!isCamera(entity))
+            if (!isCamera(entity))
                 return
             val damage = event.damage
             val finalDamage = event.finalDamage
@@ -342,7 +378,7 @@ class Main : JavaPlugin() ,Listener {
             val healthAfter = (healthBefore - finalDamage).coerceAtLeast(0.0)
             info("onPlayerDamage プレイヤー ${entity.name} がダメージを受けました: 総ダメージ=$damage, 最終ダメージ=$finalDamage health:${healthAfter}")
 
-            setCameraAppearance(entity,healthAfter)
+            setCameraAppearance(entity, healthAfter)
         }
     }
 
@@ -391,18 +427,20 @@ class Main : JavaPlugin() ,Listener {
         }
     }
 }
-fun sendBungeeCommand(sender:CommandSender,command:String){
-    Bukkit.dispatchCommand(sender,"bungeee ${command}")
+
+fun sendBungeeCommand(sender: CommandSender, command: String) {
+    Bukkit.dispatchCommand(sender, "bungeee ${command}")
 }
-fun sendBungeeMessage(sender: CommandSender,message:String){
-    if(Main.configData.broadcast)
-        Bukkit.dispatchCommand(sender,"bungeee alert ${message}")
+
+fun sendBungeeMessage(sender: CommandSender, message: String) {
+    if (Main.configData.broadcast)
+        Bukkit.dispatchCommand(sender, "bungeee alert ${message}")
 }
 
 //region 共通関数
 // ラベルからカメラを取得
-fun getCamera(label:String="mc1"):CameraThread{
-    return when(label){
+fun getCamera(label: String = "mc1"): CameraThread {
+    return when (label) {
         "mc1" -> Main.mc1
         "mc2" -> Main.mc2
         "mc3" -> Main.mc3
@@ -410,8 +448,9 @@ fun getCamera(label:String="mc1"):CameraThread{
         else -> Main.mc1
     }
 }
-fun getCamera(uuid:UUID):CameraThread?{
-    return when(uuid){
+
+fun getCamera(uuid: UUID): CameraThread? {
+    return when (uuid) {
         Main.mc1.uniqueId -> Main.mc1
         Main.mc2.uniqueId -> Main.mc2
         Main.mc3.uniqueId -> Main.mc3
@@ -422,8 +461,8 @@ fun getCamera(uuid:UUID):CameraThread?{
 
 
 // 番号からカメラを取得
-fun getCamera(no:Int=1):CameraThread{
-    return when(no){
+fun getCamera(no: Int = 1): CameraThread {
+    return when (no) {
         1 -> Main.mc1
         2 -> Main.mc2
         3 -> Main.mc3
@@ -431,32 +470,35 @@ fun getCamera(no:Int=1):CameraThread{
         else -> Main.mc1
     }
 }
+
 // 通常ログ
-fun info(message:String,sender:CommandSender? = null){
-    Bukkit.getLogger().info(Main.prefix+message)
-    sender?.sendMessage(message)
-}
-// エラーログ
-fun error(message:String,sender:CommandSender? = null) {
-    Bukkit.getLogger().severe(Main.prefix+message)
+fun info(message: String, sender: CommandSender? = null) {
+    Bukkit.getLogger().info(Main.prefix + message)
     sender?.sendMessage(message)
 }
 
-private fun isCamera(player:Player?):Boolean{
-    if(player == null)
+// エラーログ
+fun error(message: String, sender: CommandSender? = null) {
+    Bukkit.getLogger().severe(Main.prefix + message)
+    sender?.sendMessage(message)
+}
+
+private fun isCamera(player: Player?): Boolean {
+    if (player == null)
         return false
-    for(no in 1..Main.cameraCount) {
-        if(getCamera(no).uniqueId == player.uniqueId){
+    for (no in 1..Main.cameraCount) {
+        if (getCamera(no).uniqueId == player.uniqueId) {
             return true
         }
     }
     return false
 }
-private fun isTarget(player:Player?):Boolean{
-    if(player == null)
+
+private fun isTarget(player: Player?): Boolean {
+    if (player == null)
         return false
-    for(no in 1..Main.cameraCount) {
-        if(getCamera(no).targetUniqueId == player.uniqueId){
+    for (no in 1..Main.cameraCount) {
+        if (getCamera(no).targetUniqueId == player.uniqueId) {
             return true
         }
     }
@@ -467,17 +509,17 @@ private fun isTarget(player:Player?):Boolean{
 fun loadConfigData(config: FileConfiguration): ConfigData {
     val ret = ConfigData(
         broadcast = config.getBoolean("broadcast", false),
-        switchTime = config.getInt("switchTime",30),
-        mapMode = config.getInt("mapMode",3),
-        streamPort = config.getInt("streamPort",1337),
+        switchTime = config.getInt("switchTime", 30),
+        mapMode = config.getInt("mapMode", 3),
+        streamPort = config.getInt("streamPort", 1337),
     )
 
-    updateMapData(ret.mapMode,ret)
+    updateMapData(ret.mapMode, ret)
 
     return ret
 }
 
-private fun updateMapData(map_mode: Int, data:ConfigData) {
+private fun updateMapData(map_mode: Int, data: ConfigData) {
     when (map_mode) {
         1 -> {
             data.mapSize = 2
@@ -515,15 +557,22 @@ private fun updateMapData(map_mode: Int, data:ConfigData) {
         }
     }
 }
+
 fun saveConfigData(configData: ConfigData) {
     Main.plugin.config.set("broadcast", configData.broadcast)
-    Main.plugin.config.set("switchTime",configData.switchTime)
+    Main.plugin.config.set("switchTime", configData.switchTime)
     Main.plugin.saveConfig()
 
     showConfigData()
 }
-fun showConfigData(sender:CommandSender? = null){
+
+fun showConfigData(sender: CommandSender? = null) {
     info("broadcast:${Main.configData.broadcast}")
     info("switchTime:${Main.configData.switchTime}")
 }
+
+
+
+
+
 

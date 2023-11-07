@@ -1,130 +1,147 @@
 package red.man10.camera
 
+import kotlinx.coroutines.*
 import org.bukkit.Bukkit
-import org.bukkit.Bukkit.getServer
 import org.bukkit.GameMode
 import org.bukkit.Location
-import org.bukkit.Material
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.*
-import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.MapMeta
-import org.bukkit.map.MapView
 import org.bukkit.util.Vector
-import red.man10.camera.VideoCapture.screens
-
-const val BUFFER_MAP_COUNT = 11 // Odd number
+import kotlin.concurrent.thread
 
 object Command : CommandExecutor, TabCompleter {
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
 
-        if(label == "manbo"){
+        if (label == "manbo") {
             sender.sendMessage("§b§l[まんぼ]§f質問するには「まんぼ、銀行はどこ？」「丸石をうりたいまんぼ」のように「まんぼ」をつけて質問してください。")
             return false
         }
 
-        if(!sender.hasPermission("red.man10.camera.op")){
+        if (!sender.hasPermission("red.man10.camera.op")) {
             sender.sendMessage("このコマンドを実行する権限がない")
-            return  false
+            return false
         }
 
-        if(args.isEmpty()){
-            showHelp(label,sender)
+        if (args.isEmpty()) {
+            showHelp(label, sender)
             return true
         }
 
-        when(args[0]){
-            "help" -> showHelp(label,sender)
-            "set" -> set(label,sender,args)
-            "kit" -> kit(label,sender,args)
-            "location" -> location(label,sender,args)
-            "follow" -> follow(label,sender,args)
-            "back" -> back(label,sender,args)
-            "face" -> face(label,sender,args)
-            "backview" -> backView(label,sender,args)
-            "front" -> front(label,sender,args)
-            "rotate" -> rotate(label,sender,args)
-            "clone" -> clone(label,sender,args)
-            "look" -> look(label,sender,args)
-            "tp" -> tp(label,sender,args)
-            "stop" -> stop(label,sender,args)
-            "spectate" -> spectate(label,sender,args)
+        when (args[0]) {
+            "help" -> showHelp(label, sender)
+            "set" -> set(label, sender, args)
+            "kit" -> kit(label, sender, args)
+            "location" -> location(label, sender, args)
+            "follow" -> follow(label, sender, args)
+            "back" -> back(label, sender, args)
+            "face" -> face(label, sender, args)
+            "backview" -> backView(label, sender, args)
+            "front" -> front(label, sender, args)
+            "rotate" -> rotate(label, sender, args)
+            "clone" -> clone(label, sender, args)
+            "look" -> look(label, sender, args)
+            "tp" -> tp(label, sender, args)
+            "stop" -> stop(label, sender, args)
+            "spectate" -> spectate(label, sender, args)
             "show" -> getCamera(label).show(sender)
             "showbody" -> getCamera(label).showBody(sender)
             "hide" -> getCamera(label).hide(sender)
-            "title" -> title(label,sender,args)
-            "text" -> text(label,sender,args)
-            "set" -> set(label,sender,args)
+            "title" -> title(label, sender, args)
+            "text" -> text(label, sender, args)
+            "photo" -> photo(label, sender, args)
+            "set" -> set(label, sender, args)
 
             //
             "auto" -> {
                 Main.commandSender = sender
                 Main.autoTask = Main.autoTask != true
-                Main.taskSwitchCount =0
-                info("自動モード:${Main.autoTask}",sender)
+                Main.taskSwitchCount = 0
+                info("自動モード:${Main.autoTask}", sender)
             }
-            "server" -> server(label,sender,args)
-            "test" -> test(label,sender,args)
-            "switch" -> {Main.taskSwitchCount = 0}
-            "config" -> config(label,sender,args)
-            "movie" -> movie(label,sender,args)
-            "vision" -> vision(label,sender,args)
-            "freeze" -> freeze(label,sender,args)
+
+            "server" -> server(label, sender, args)
+            "test" -> test(label, sender, args)
+
+            "switch" -> {
+                Main.taskSwitchCount = 0
+            }
+
+            "config" -> config(label, sender, args)
+            "movie" -> movie(label, sender, args)
+            "vision" -> vision(label, sender, args)
+            "freeze" -> freeze(label, sender, args)
 
         }
 
         return false
     }
-    private fun test(label:String, sender: CommandSender, args: Array<out String>){
-/*
-        val player = getCamera(1).cameraPlayer
-        sendActionText(player!!,"§f§lアクションテキスト")
-        sendTitleText(player!!,"§eTitle")
 
- */
-    }
-
-    private fun follow(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).follow(sender, onlinePlayer(sender,args))
-    }
-    private fun look(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).look(sender, onlinePlayer(sender,args))
-    }
-    private fun back(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).back(sender, onlinePlayer(sender,args))
-    }
-    private fun front(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).front(sender, onlinePlayer(sender,args))
-    }
-    private fun face(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).face(sender, onlinePlayer(sender,args))
-    }
-    private fun backView(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).backView(sender, onlinePlayer(sender,args))
-    }
-    private fun clone(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).clone(sender, onlinePlayer(sender,args))
-    }
-    private fun tp(label:String,sender: CommandSender,args: Array<out String>){
-        if(args.size > 3 || args.size < 1 ){
-            error("コマンドエラー: -> tp (player / w,x,y,z(yaw,pitch)" ,sender)
+    private fun photo(label: String, sender: CommandSender, args: Array<out String>) {
+        val player = Bukkit.getPlayer(args[1])
+        if (player != null) {
+            var camera = getCamera(label)
+            camera.takePhoto(sender, player,"binbo")
             return
         }
 
-        if(args.size == 2){
+
+    }
+
+    // JSONをマッピングするためのデータクラス
+    private fun test(label: String, sender: CommandSender, args: Array<out String>) {
+
+        var camera = getCamera(label)
+        camera.test(sender)
+    }
+
+    private fun follow(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).follow(sender, onlinePlayer(sender, args))
+    }
+
+    private fun look(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).look(sender, onlinePlayer(sender, args))
+    }
+
+    private fun back(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).back(sender, onlinePlayer(sender, args))
+    }
+
+    private fun front(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).front(sender, onlinePlayer(sender, args))
+    }
+
+    private fun face(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).face(sender, onlinePlayer(sender, args))
+    }
+
+    private fun backView(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).backView(sender, onlinePlayer(sender, args))
+    }
+
+    private fun clone(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).clone(sender, onlinePlayer(sender, args))
+    }
+
+    private fun tp(label: String, sender: CommandSender, args: Array<out String>) {
+        if (args.size > 3 || args.size < 1) {
+            error("コマンドエラー: -> tp (player / w,x,y,z(yaw,pitch)", sender)
+            return
+        }
+
+        if (args.size == 2) {
             val player = Bukkit.getPlayer(args[1])
-            if(player != null) {
+            if (player != null) {
                 getCamera(label).cameraPlayer!!.teleport(player.location)
                 return
             }
         }
-        val wxyzyp= args[1].split(",")
-        if(wxyzyp.size <= 4){
-            error("コマンドエラー: -> tp (player / w,x,y,z(yaw,pitch)" ,sender)
+        val wxyzyp = args[1].split(",")
+        if (wxyzyp.size <= 4) {
+            error("コマンドエラー: -> tp (player / w,x,y,z(yaw,pitch)", sender)
             return
         }
 
@@ -138,158 +155,184 @@ object Command : CommandExecutor, TabCompleter {
             val z = wxyzyp[3].toDouble()
             var pitch = 0.0f
             var yaw = 0.0f
-            if(wxyzyp.size >= 5)
+            if (wxyzyp.size >= 5)
                 yaw = wxyzyp[4].toFloat()
-            if(wxyzyp.size >= 6)
+            if (wxyzyp.size >= 6)
                 pitch = wxyzyp[5].toFloat()
-            val loc = Location(Bukkit.getWorld(w),x,y,z,yaw,pitch)
+            val loc = Location(Bukkit.getWorld(w), x, y, z, yaw, pitch)
             getCamera(label).cameraPlayer!!.teleport(loc)
         })
     }
 
-    private fun title(label:String,sender: CommandSender,args: Array<out String>){
-        if(args.size < 2){
-            error("コマンドエラー: -> title [title ] [subtitle] [time=3.0])" ,sender)
+    private fun title(label: String, sender: CommandSender, args: Array<out String>) {
+        if (args.size < 2) {
+            error("コマンドエラー: -> title [title ] [subtitle] [time=3.0])", sender)
             return
         }
         var title = args[1]
-        var sub =""
+        var sub = ""
         var time = 3.0
-        if(args.size >= 3)
-             sub = args[2]
-        if(args.size >= 4)
-             time = args[3].toDouble()
-        getCamera(label).sendTitle(title,sub,time)
-   }
-    private fun text(label:String,sender: CommandSender,args: Array<out String>){
-        if(args.size < 2){
-            error("コマンドエラー: -> title [title ] [subtitle] [time=3.0])" ,sender)
+        if (args.size >= 3)
+            sub = args[2]
+        if (args.size >= 4)
+            time = args[3].toDouble()
+        getCamera(label).sendTitle(title, sub, time)
+    }
+
+    private fun text(label: String, sender: CommandSender, args: Array<out String>) {
+        if (args.size < 2) {
+            error("コマンドエラー: -> title [title ] [subtitle] [time=3.0])", sender)
             return
         }
         var text = args[1]
         var time = 2.0
-        if(args.size >= 3)
+        if (args.size >= 3)
             time = args[2].toDouble()
-        getCamera(label).sendText(text,time)
+        getCamera(label).sendText(text, time)
     }
 
-    private fun rotate(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).rotate(sender, onlinePlayer(sender,args))
+    private fun rotate(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).rotate(sender, onlinePlayer(sender, args))
     }
-    private fun spectate(label:String, sender: CommandSender, args: Array<out String>){
-        getCamera(label).spectate(sender, onlinePlayer(sender,args))
+
+    private fun spectate(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).spectate(sender, onlinePlayer(sender, args))
     }
-    private fun stop(label:String,sender: CommandSender,args: Array<out String>){
-        getCamera(label).stop(sender, onlinePlayer(sender,args))
+
+    private fun stop(label: String, sender: CommandSender, args: Array<out String>) {
+        getCamera(label).stop(sender, onlinePlayer(sender, args))
     }
 
 
-    private fun server(label:String, sender: CommandSender, args: Array<out String>){
-        if(args.size != 2){
-            error("転送先サーバ名を指定してください",sender)
+    private fun server(label: String, sender: CommandSender, args: Array<out String>) {
+        if (args.size != 2) {
+            error("転送先サーバ名を指定してください", sender)
             return
         }
         val serverName = args[1]
-        for(no in 1..Main.cameraCount) {
+        for (no in 1..Main.cameraCount) {
             val uuid = getCamera(no).uniqueId ?: continue
 
-            if(getCamera(no).cameraLabel.equals(label) || label == "mc"){
+            if (getCamera(no).cameraLabel.equals(label) || label == "mc") {
                 val player = Bukkit.getOfflinePlayer(uuid)
-                sendBungeeCommand(sender,"send ${player.name} $serverName")
+                sendBungeeCommand(sender, "send ${player.name} $serverName")
             }
         }
     }
 
     // set [key] [value]　でカメラ設定を保存
-    private fun set(label:String,sender: CommandSender,args: Array<out String>){
+    private fun set(label: String, sender: CommandSender, args: Array<out String>) {
 
-        if(args.size != 3){
-            showHelp(label,sender)
+        if (args.size != 3) {
+            showHelp(label, sender)
             return
         }
         val key = args[1]
         val name = args[2]
-        when(key){
-            "target" -> getCamera(label).setTarget(sender,name)
-            "camera" -> getCamera(label).setCamera(sender,name)
-            "position" -> setPosition(label,sender,name)
-            "radius" -> setRadius(label,sender,name)
-            "height" -> setHeight(label,sender,name)
-            "nightvision" -> setNightVision(label,sender,name)
-            "notification" -> setNotification(label,sender,name)
-            "title" -> setTitleFlag(label,sender,name)
-            "kit" -> getCamera(label).setKit(sender,name)
+        when (key) {
+            "target" -> getCamera(label).setTarget(sender, name)
+            "camera" -> getCamera(label).setCamera(sender, name)
+            "position" -> setPosition(label, sender, name)
+            "radius" -> setRadius(label, sender, name)
+            "height" -> setHeight(label, sender, name)
+            "nightvision" -> setNightVision(label, sender, name)
+            "notification" -> setNotification(label, sender, name)
+            "title" -> setTitleFlag(label, sender, name)
+            "kit" -> getCamera(label).setKit(sender, name)
         }
     }
-    private fun kit(label:String,sender: CommandSender,args: Array<out String>){
-        if(args.size < 2){
-            showHelp(label,sender)
+
+    private fun kit(label: String, sender: CommandSender, args: Array<out String>) {
+        if (args.size < 2) {
+            showHelp(label, sender)
             return
         }
 
         // カメラの場合は、カメラのプレイヤーにキットを適用
-        if(label != "mc"){
+        if (label != "mc") {
             val kit = args[1]
-            getCamera(label).setKit(sender,kit,false)
+            getCamera(label).setKit(sender, kit, false)
             return
         }
 
 
         val key = args[1]
-        if(args.size == 2){
-            when(key){
-                "list" -> { KitManager.showList(sender) }
+        if (args.size == 2) {
+            when (key) {
+                "list" -> {
+                    KitManager.showList(sender)
+                }
             }
             return
         }
         val name = args[2]
-        when(key) {
-            "save" -> { KitManager.save(sender,name) }
-            "delete" -> { KitManager.delete(sender,name) }
-            "load" -> { KitManager.load(sender,name) }
+        when (key) {
+            "save" -> {
+                KitManager.save(sender, name)
+            }
+
+            "delete" -> {
+                KitManager.delete(sender, name)
+            }
+
+            "load" -> {
+                KitManager.load(sender, name)
+            }
         }
     }
-    private fun location(label:String,sender: CommandSender,args: Array<out String>){
 
-        if(label != "mc"){
+    private fun location(label: String, sender: CommandSender, args: Array<out String>) {
+
+        if (label != "mc") {
             return
         }
 
 
         val key = args[1]
-        if(args.size == 2){
-            when(key){
-                "list" -> { Main.locationManager.showList(sender) }
+        if (args.size == 2) {
+            when (key) {
+                "list" -> {
+                    Main.locationManager.showList(sender)
+                }
             }
             return
         }
         val name = args[2]
-        when(key) {
-            "save" -> { Main.locationManager.addLocation(sender as Player,name) }
-            "delete" -> { Main.locationManager.deleteLocation(sender as Player,name) }
-            "tp" -> { Main.locationManager.teleport(sender,sender,name) }
+        when (key) {
+            "save" -> {
+                Main.locationManager.addLocation(sender as Player, name)
+            }
+
+            "delete" -> {
+                Main.locationManager.deleteLocation(sender as Player, name)
+            }
+
+            "tp" -> {
+                Main.locationManager.teleport(sender, sender, name)
+            }
         }
     }
+
     // 共通config
-    private fun config(label:String,sender: CommandSender,args: Array<out String>){
+    private fun config(label: String, sender: CommandSender, args: Array<out String>) {
 
-        if(args.size != 3){
-            showHelp(label,sender)
+        if (args.size != 3) {
+            showHelp(label, sender)
             return
         }
 
         val key = args[1]
         val value = args[2]
-        when(key){
+        when (key) {
             "broadcast" -> Main.configData.broadcast = value == "on"
-            "switchTime"-> Main.configData.switchTime = value.toInt()
+            "switchTime" -> Main.configData.switchTime = value.toInt()
         }
         saveConfigData(Main.configData)
         sender.sendMessage("$key->$value saved")
     }
 
-    private fun vision(label:String,sender: CommandSender,args: Array<out String>){
-        if(args.size != 4){
+    private fun vision(label: String, sender: CommandSender, args: Array<out String>) {
+        if (args.size != 4) {
             sender.sendMessage("$label vision [creeper/enderman/spider] mcid (秒)")
             return
         }
@@ -299,28 +342,28 @@ object Command : CommandExecutor, TabCompleter {
         val sec = args[3].toInt()
 
         info("$mode,$player,$sec vision start")
-        setVision(sender,player,mode,sec)
+        setVision(sender, player, mode, sec)
     }
 
     // 特定の場所にすべてのプレイヤーをTPさせて見させる
-    private fun movie(label:String,sender: CommandSender,args: Array<out String>){
-        if(args.size > 3 || args.size < 1 ){
-            error("movie [w,x,y,z,yaw,pitch] 秒数" ,sender)
+    private fun movie(label: String, sender: CommandSender, args: Array<out String>) {
+        if (args.size > 3 || args.size < 1) {
+            error("movie [w,x,y,z,yaw,pitch] 秒数", sender)
             return
         }
 
-        var player:Player? = null
-        if(args.size == 2){
+        var player: Player? = null
+        if (args.size == 2) {
             player = Bukkit.getPlayer(args[1])
-            if(player != null) {
+            if (player != null) {
                 getCamera(label).cameraPlayer!!.teleport(player.location)
                 return
             }
         }
 
-        val wxyzyp= args[1].split(",")
-        if(wxyzyp.size <= 4){
-            error("movie [w,x,y,z,yaw,pitch] 秒数" ,sender)
+        val wxyzyp = args[1].split(",")
+        if (wxyzyp.size <= 4) {
+            error("movie [w,x,y,z,yaw,pitch] 秒数", sender)
             return
         }
         val sec = args[2].toInt()
@@ -332,33 +375,33 @@ object Command : CommandExecutor, TabCompleter {
         val z = wxyzyp[3].toDouble()
         var pitch = 0.0f
         var yaw = 0.0f
-        if(wxyzyp.size >= 5)
+        if (wxyzyp.size >= 5)
             yaw = wxyzyp[4].toFloat()
-        if(wxyzyp.size >= 6)
+        if (wxyzyp.size >= 6)
             pitch = wxyzyp[5].toFloat()
 
-        if(Bukkit.getWorld(w) == null){
+        if (Bukkit.getWorld(w) == null) {
             sender.sendMessage("指定されたworld:'$w'は無効です")
             return
         }
 
         // コマンドで指定されたロケーション
-        val loc = Location(Bukkit.getWorld(w),x,y,z,yaw,pitch)
+        val loc = Location(Bukkit.getWorld(w), x, y, z, yaw, pitch)
         // 特定の場所にmobをわかせる
-        var mob = spawnMob(sender,"",sec,loc)
+        var mob = spawnMob(sender, "", sec, loc)
         Bukkit.getOnlinePlayers().forEach { p ->
 //            if(!p.isOp){
-                if(true){
+            if (true) {
                 // ゲームモードを指定秒数後に戻して視界を戻す
                 val pastLocation = p.location
-                    p.teleport(loc)
+                p.teleport(loc)
 
                 Bukkit.getOnlinePlayers().forEach { p2 ->
-                    p.hidePlayer(Main.plugin!!,p2)
+                    p.hidePlayer(Main.plugin!!, p2)
                 }
                 //
                 Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
-                  //  p.gameMode = current
+                    //  p.gameMode = current
                     p.gameMode = GameMode.SURVIVAL
                     p.teleport(pastLocation)
                 }, 20L * sec)
@@ -377,9 +420,10 @@ object Command : CommandExecutor, TabCompleter {
         }, 20L * sec)
 
     }
-    private fun freeze(label:String,sender: CommandSender,args: Array<out String>){
+
+    private fun freeze(label: String, sender: CommandSender, args: Array<out String>) {
         info("${args.size}")
-        if(args.size <=2 || args.size>5){
+        if (args.size <= 2 || args.size > 5) {
             sender.sendMessage("$label freeze プレイヤー メッセージ サブテキスト (秒数)")
             return
         }
@@ -388,39 +432,40 @@ object Command : CommandExecutor, TabCompleter {
         val sec = args[2].toInt()
         var message = ""
         var subtext = ""
-        if(args.size >= 4)
+        if (args.size >= 4)
             message = args[3]
-        if(args.size >= 5)
+        if (args.size >= 5)
             subtext = args[4]
 
         Bukkit.getScheduler().runTask(Main.plugin!!, Runnable {
             val tick = sec * 20
             val p = Bukkit.getPlayer(mcid)
-            p?.sendTitle(message.replace("&","§"),subtext.replace("&","§"),10,tick.toInt(),10)
+            p?.sendTitle(message.replace("&", "§"), subtext.replace("&", "§"), 10, tick.toInt(), 10)
         })
-        setVision(sender,mcid,"creeper",sec)
+        setVision(sender, mcid, "creeper", sec)
     }
-    private fun setPosition(label:String,sender: CommandSender,value:String){
-        val xyz= value.split(",")
-        if(xyz.size == 3){
-            try{
+
+    private fun setPosition(label: String, sender: CommandSender, value: String) {
+        val xyz = value.split(",")
+        if (xyz.size == 3) {
+            try {
                 val x = xyz[0].toDouble()
                 val y = xyz[1].toDouble()
                 val z = xyz[2].toDouble()
-                getCamera(label).setRelativePosition(sender,x,y,z)
+                getCamera(label).setRelativePosition(sender, x, y, z)
                 return
-            }catch (ex:Exception){
+            } catch (ex: Exception) {
                 error(ex.localizedMessage)
             }
         }
-        error("パラメータは、x,y,zの相対座標で指定してください。",sender)
+        error("パラメータは、x,y,zの相対座標で指定してください。", sender)
     }
 
-    private fun onlinePlayer(sender: CommandSender, args: Array<out String>): Player?{
-        if(args.size < 2)
+    private fun onlinePlayer(sender: CommandSender, args: Array<out String>): Player? {
+        if (args.size < 2)
             return null
-        val player = getOnlinePlayer(sender,args[1])
-        if(player != null){
+        val player = getOnlinePlayer(sender, args[1])
+        if (player != null) {
             sender.sendMessage("${player.name}の追跡を開始")
             return player
         }
@@ -429,54 +474,57 @@ object Command : CommandExecutor, TabCompleter {
         return player
     }
 
-    private fun setRadius(label:String,sender: CommandSender,value:String){
-        val text= value.split(",")
-        if(text.size == 1){
-            try{
+    private fun setRadius(label: String, sender: CommandSender, value: String) {
+        val text = value.split(",")
+        if (text.size == 1) {
+            try {
                 val r = text[0].toDouble()
-                getCamera(label).setRadius(sender,r)
+                getCamera(label).setRadius(sender, r)
                 return
-            }catch (ex:Exception){
+            } catch (ex: Exception) {
                 error(ex.localizedMessage)
             }
         }
-        error("パラメータは2以上にしてください",sender)
+        error("パラメータは2以上にしてください", sender)
     }
-    private fun setHeight(label:String,sender: CommandSender,value:String){
-        val text= value.split(",")
-        if(text.size == 1){
-            try{
+
+    private fun setHeight(label: String, sender: CommandSender, value: String) {
+        val text = value.split(",")
+        if (text.size == 1) {
+            try {
                 val h = text[0].toDouble()
-                getCamera(label).setHeight(sender,h)
+                getCamera(label).setHeight(sender, h)
                 return
-            }catch (ex:Exception){
+            } catch (ex: Exception) {
                 error(ex.localizedMessage)
             }
         }
-        error("パラメータは、ひとつだけで",sender)
+        error("パラメータは、ひとつだけで", sender)
     }
-    private fun setNightVision(label:String,sender: CommandSender,value:String){
-        when(value){
-            "on" -> getCamera(label).setNightVision(sender,true)
-            else -> getCamera(label).setNightVision(sender,false)
+
+    private fun setNightVision(label: String, sender: CommandSender, value: String) {
+        when (value) {
+            "on" -> getCamera(label).setNightVision(sender, true)
+            else -> getCamera(label).setNightVision(sender, false)
         }
     }
 
-    private fun setNotification(label:String,sender: CommandSender,value:String){
-        when(value){
-            "on" -> getCamera(label).setNotification(sender,true)
-            else -> getCamera(label).setNotification(sender,false)
+    private fun setNotification(label: String, sender: CommandSender, value: String) {
+        when (value) {
+            "on" -> getCamera(label).setNotification(sender, true)
+            else -> getCamera(label).setNotification(sender, false)
         }
     }
-    private fun setTitleFlag(label:String,sender: CommandSender,value:String){
-        when(value){
-            "on" -> getCamera(label).setTitleFlag(sender,true)
-            else -> getCamera(label).setTitleFlag(sender,false)
+
+    private fun setTitleFlag(label: String, sender: CommandSender, value: String) {
+        when (value) {
+            "on" -> getCamera(label).setTitleFlag(sender, true)
+            else -> getCamera(label).setTitleFlag(sender, false)
         }
     }
 
     // ヘルプメッセージ
-    private fun showHelp(label:String,sender: CommandSender){
+    private fun showHelp(label: String, sender: CommandSender) {
         sender.sendMessage("§b===============[Man10 Camera System ver.${Main.version}]====================")
         sender.sendMessage("§amc1/mc2/mc3/mc4 カメラ1/カメラ2/カメラ3/カメラ4を制御")
         sender.sendMessage("§b[動作モード制御]")
@@ -560,74 +608,124 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
 */
         sender.sendMessage("§b=======[Author: takatronix /  https://man10.red]=============")
     }
-    private fun youtube(label:String,sender: CommandSender){
-        if(Main.configData.broadcast)
-            sendBungeeMessage(sender,Main.youtubeMessage)
+
+    private fun youtube(label: String, sender: CommandSender) {
+        if (Main.configData.broadcast)
+            sendBungeeMessage(sender, Main.youtubeMessage)
         else
-            info("broadcastオフのためメッセージを出さない",sender)
+            info("broadcastオフのためメッセージを出さない", sender)
     }
 
     // タブ補完
-    override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>?): List<String>? {
+    override fun onTabComplete(
+        sender: CommandSender,
+        command: Command,
+        alias: String,
+        args: Array<out String>?
+    ): List<String>? {
 
-        if(alias == "manbo"){
+        if (alias == "manbo") {
             return null
         }
 
-        if(args?.size == 1){
-            return listOf("set","config","follow","rotate","clone","back","backview","kit","tp","look","spectate","stop","front","face","show","showbody","hide","live","auto","server","switch","vision","freeze","movie","location")
+        if (args?.size == 1) {
+            return listOf(
+                "set",
+                "config",
+                "follow",
+                "rotate",
+                "clone",
+                "back",
+                "backview",
+                "kit",
+                "tp",
+                "look",
+                "spectate",
+                "stop",
+                "front",
+                "face",
+                "show",
+                "showbody",
+                "hide",
+                "live",
+                "test",
+                "auto",
+                "server",
+                "switch",
+                "vision",
+                "freeze",
+                "movie",
+                "location",
+                "photo",
+                "text",
+                "title"
+            )
         }
-        when(args?.get(0)){
+        when (args?.get(0)) {
             "set" -> return onTabSet(args)
-            "kit" -> return onTabKit(args,alias)
-            "location" -> return onTabLocation(args,alias)
+            "kit" -> return onTabKit(args, alias)
+            "location" -> return onTabLocation(args, alias)
             "config" -> return onTabConfig(args)
             "vision" -> return onTabVision(args)
         }
         return null
     }
 
-    private fun onTabSet(args: Array<out String>?) : List<String>?{
-        if(args?.size == 2)
-            return listOf("target","camera","position","radius","height","nightvision","notification","title","kit")
-        if(args?.size == 3){
-            if(args[1] == "kit")
+    private fun onTabSet(args: Array<out String>?): List<String>? {
+        if (args?.size == 2)
+            return listOf(
+                "target",
+                "camera",
+                "position",
+                "radius",
+                "height",
+                "nightvision",
+                "notification",
+                "title",
+                "kit"
+            )
+        if (args?.size == 3) {
+            if (args[1] == "kit")
                 return KitManager.getList()
         }
         return null
     }
-    private fun onTabKit(args: Array<out String>?,alias: String) : List<String>?{
-        if(alias != "mc"){
+
+    private fun onTabKit(args: Array<out String>?, alias: String): List<String>? {
+        if (alias != "mc") {
             return KitManager.getList()
         }
-        if(args?.size == 2)
-            return listOf("list","save","load","delete")
+        if (args?.size == 2)
+            return listOf("list", "save", "load", "delete")
         return null
     }
-    private fun onTabLocation(args: Array<out String>?,alias: String) : List<String>?{
-        if(alias != "mc"){
+
+    private fun onTabLocation(args: Array<out String>?, alias: String): List<String>? {
+        if (alias != "mc") {
             return Main.locationManager.getList()
         }
 
-        if(args?.size == 2)
-            return listOf("list","save","teleport","delete")
+        if (args?.size == 2)
+            return listOf("list", "save", "teleport", "delete")
 
-        if(args?.size ==3)
+        if (args?.size == 3)
             return Main.locationManager.getList()
         return null
     }
-    private fun onTabConfig(args: Array<out String>?) : List<String>?{
-        if(args?.size == 2)
-            return listOf("broadcast","switchTime")
-        return null
-    }
-    private fun onTabVision(args: Array<out String>?) : List<String>?{
-        if(args?.size == 2)
-            return listOf("creeper","enderman","spider")
+
+    private fun onTabConfig(args: Array<out String>?): List<String>? {
+        if (args?.size == 2)
+            return listOf("broadcast", "switchTime")
         return null
     }
 
-    private fun setArmorStandView(sender:CommandSender,mcid:String,location: Location,sec:Int): Boolean {
+    private fun onTabVision(args: Array<out String>?): List<String>? {
+        if (args?.size == 2)
+            return listOf("creeper", "enderman", "spider")
+        return null
+    }
+
+    private fun setArmorStandView(sender: CommandSender, mcid: String, location: Location, sec: Int): Boolean {
 
         // プレイヤー確認
         val p: Player? = Bukkit.getPlayer(mcid)
@@ -670,8 +768,8 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
     }
 
 
-    fun spawnMob(sender:CommandSender,mode:String,sec:Int,loc:Location): Mob? {
-        val mob: Mob = loc.world.spawnEntity(loc,EntityType.ALLAY) as Mob
+    fun spawnMob(sender: CommandSender, mode: String, sec: Int, loc: Location): Mob? {
+        val mob: Mob = loc.world.spawnEntity(loc, EntityType.ALLAY) as Mob
         mob.isInvisible = true
         mob.isSilent = true
         mob.isInvulnerable = true
@@ -679,17 +777,17 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         mob.setGravity(false)
         mob.isCollidable = false
         mob.teleport(loc)
-        mob.setRotation(loc.yaw,loc.pitch)
+        mob.setRotation(loc.yaw, loc.pitch)
         return mob
     }
 
 
     // 指定秒数間エフェクトをかける
     // "creeper","enderman","spider"
-    fun setVision(sender:CommandSender,mcid:String,mode:String,sec:Int,loc:Location? = null): Boolean {
+    fun setVision(sender: CommandSender, mcid: String, mode: String, sec: Int, loc: Location? = null): Boolean {
         val p: Player? = Bukkit.getPlayer(mcid)
         if (p == null || !p.isOnline || p.name != mcid) {
-            error("プレイヤーが存在しない",sender)
+            error("プレイヤーが存在しない", sender)
             return false
         }
 
@@ -706,8 +804,8 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         if (mode.equals("bat", ignoreCase = true))
             view = p.world.spawnEntity(p.location, EntityType.BAT) as Bat
 
-        if (view == null){
-            error("mob view作成失敗:$mode",sender)
+        if (view == null) {
+            error("mob view作成失敗:$mode", sender)
             return false
         }
 
@@ -718,11 +816,11 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
         finalView.setAI(false)
         finalView.setGravity(false)
         finalView.isCollidable = false
-        if(view is Creeper){
+        if (view is Creeper) {
             view.fuseTicks = Int.MAX_VALUE
         }
 
-        if(loc != null)
+        if (loc != null)
             finalView.teleport(loc)
         else
             finalView.teleport(p.location)
@@ -731,7 +829,8 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
             Bukkit.getScheduler().runTaskLater(Main.plugin!!, Runnable {
                 val directionVector: Vector = p.location.subtract(pastLocation).toVector()
                 if (directionVector.length().toInt() != 0)
-                    finalView.velocity = directionVector.normalize().multiply(Math.sqrt(pastLocation.distance(p.location)))
+                    finalView.velocity =
+                        directionVector.normalize().multiply(Math.sqrt(pastLocation.distance(p.location)))
 
                 finalView.isAware = false
 
@@ -744,7 +843,7 @@ sender.sendMessage("§a/$label location delete [位置名]      登録位置を�
                     p.gameMode = current
                     p.teleport(pastLocation)
                     finalView.remove()
-                 }, 20L * sec)
+                }, 20L * sec)
             }, 2)
         }, 1)
         return true

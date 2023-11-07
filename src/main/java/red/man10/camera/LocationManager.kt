@@ -1,6 +1,7 @@
 package red.man10.camera
 
-import org.bukkit.*
+import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
@@ -10,8 +11,8 @@ public class LocationManager {
     public var name = "location"
     private val locations = mutableMapOf<String, Location>()
 
-    public fun teleport(sender: CommandSender,player:CommandSender, name: String) {
-        if( player !is Player){
+    public fun teleport(sender: CommandSender, player: CommandSender, name: String) {
+        if (player !is Player) {
             sender.sendMessage("プレイヤーのみ実行できます")
             return
         }
@@ -30,8 +31,8 @@ public class LocationManager {
         sender.sendMessage("位置を追加しました:$name")
     }
 
-    public fun deleteLocation(sender:Player,name:String){
-        if(!locations.containsKey(name)){
+    public fun deleteLocation(sender: Player, name: String) {
+        if (!locations.containsKey(name)) {
             sender.sendMessage("その名前の位置は存在しません:$name")
             return
         }
@@ -56,6 +57,7 @@ public class LocationManager {
         }
         config.save(filePath)
     }
+
     public fun load(): Boolean {
         val userdata = File(Main.plugin!!.dataFolder, File.separator + "locations")
         val filePath = File(userdata, File.separator + name + ".yml")
@@ -74,6 +76,7 @@ public class LocationManager {
         }
         return true
     }
+
     fun getList(): List<String> {
         return locations.keys.toList()
     }

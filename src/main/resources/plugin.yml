@@ -3,7 +3,7 @@ version: '1.0'
 main: red.man10.camera.Main
 api-version: 1.19
 prefix: MCS
-authors: [takatronix]
+authors: [ takatronix ]
 description: Minecraft Camera System
 website: https://man10.red
 commands:

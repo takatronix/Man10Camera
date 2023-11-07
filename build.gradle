@@ -8,18 +8,23 @@ version = '2.0'
 
 repositories {
     mavenCentral()
-    maven {name = 'papermc-repo'
-url = 'https://repo.papermc.io/repository/maven-public/'
+    maven {
+        name = 'papermc-repo'
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
 }
-maven {name = 'sonatype'
-url = 'https://oss.sonatype.org/content/groups/public/'
-} }
 
 dependencies {
     compileOnly fileTree(dir: 'libs', include: '*.jar')
     compileOnly 'io.papermc.paper:paper-api:1.19.1-R0.1-SNAPSHOT'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    compileOnly 'com.comphenix.protocol:ProtocolLib:5.0.0'
+    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+
+    implementation "com.squareup.okhttp3:mockwebserver:4.10.0"
 }
 
 def targetJavaVersion = 17
@@ -48,16 +53,16 @@ processResources {
 }
 compileKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 }
 compileTestKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 }
 jar {
-    duplicatesStrategy= DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.compileClasspath.collect { // .jarファイルに含める
             it.isDirectory() ? it : zipTree(it)
